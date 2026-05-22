@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CSV → BigQuery Uploader · SCTP Team 2</title>
+  <style>
+    :root { --bq:#4285F4; --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb;
+            --ok:#16a34a; --okbg:#dcfce7; --err:#dc2626; --errbg:#fee2e2;
+            --warn:#b45309; --warnbg:#fef3c7; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; color: var(--ink);
+           background: #f8fafc; margin: 0; padding: 40px 16px; }
+    .card { max-width: 640px; margin: 0 auto; background:#fff; border:1px solid var(--line);
+            border-radius: 14px; padding: 28px 30px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    h1 .bq { color: var(--bq); }
+    .sub { color: var(--muted); font-size: 13.5px; margin-bottom: 22px; }
+    .target { background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px;
+              padding:12px 14px; font-size:13px; margin-bottom:22px; }
+    .target code { background:#dbeafe; padding:1px 6px; border-radius:5px; }
+    label { display:block; font-weight:600; font-size:13.5px; margin:16px 0 6px; }
+    input[type=file], input[type=text], select {
+      width:100%; padding:10px 12px; border:1px solid var(--line);
+      border-radius:9px; font-size:14px; }
+    .row { display:flex; gap:14px; }
+    .row > div { flex:1; }
+    .hint { color: var(--muted); font-size:12px; margin-top:4px; }
+    button { margin-top:22px; width:100%; background:var(--bq); color:#fff;
+             border:0; padding:13px; border-radius:10px; font-size:15px;
+             font-weight:600; cursor:pointer; }
+    button:hover { background:#3367d6; }
+    .flash { padding:10px 13px; border-radius:9px; font-size:13px; margin-bottom:8px;
+             word-break: break-word; }
+    .flash.success { background:var(--okbg); color:var(--ok); }
+    .flash.error   { background:var(--errbg); color:var(--err); }
+    .flash.warn    { background:var(--warnbg); color:var(--warn); }
+    .tables { margin-top:26px; border-top:1px solid var(--line); padding-top:18px; }
+    .tables h2 { font-size:14px; margin:0 0 10px; color:var(--muted); }
+    .chip { display:inline-block; background:#f1f5f9; border:1px solid var(--line);
+            border-radius:7px; padding:4px 9px; font-size:12.5px; margin:0 6px 6px 0; }
+    .foot { text-align:center; color:var(--muted); font-size:12px; margin-top:24px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>CSV → <span class="bq">BigQuery</span> Uploader</h1>
+    <div class="sub">Module 1 · loads CSVs into the <strong>bronze</strong> layer · SCTP Team 2</div>
+
+    <div class="target">
+      Loading into <code>{{ project }}.{{ dataset }}</code> &nbsp;·&nbsp; region <code>{{ location }}</code> &nbsp;·&nbsp; max <code>{{ max_mb }} MB</code>/file
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="flash {{ 'warn' if category=='warn' else category }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+      <label for="csv_files">CSV file(s)</label>
+      <input type="file" id="csv_files" name="csv_files" accept=".csv" multiple required>
+      <div class="hint">Select one or more .csv files. Table name is derived from each filename unless you set a custom name below (single file only).</div>
+
+      <div class="row">
+        <div>
+          <label for="table_name">Custom table name (optional)</label>
+          <input type="text" id="table_name" name="table_name" placeholder="e.g. orders">
+          <div class="hint">Used only when uploading a single file.</div>
+        </div>
+        <div>
+          <label for="write_mode">Write mode</label>
+          <select id="write_mode" name="write_mode">
+            <option value="replace">Replace (overwrite table)</option>
+            <option value="append">Append (add rows)</option>
+          </select>
+          <div class="hint">Replace = re-load; Append = add to existing.</div>
+        </div>
+      </div>
+
+      <button type="submit">Upload to BigQuery</button>
+    </form>
+
+    <div class="tables">
+      <h2>Existing tables in {{ dataset }}</h2>
+      {% if tables %}
+        {% for t in tables %}<span class="chip">{{ t }}</span>{% endfor %}
+      {% else %}
+        <div class="hint">No tables yet (or dataset not found).</div>
+      {% endif %}
+    </div>
+
+    <div class="foot">Auth: {{ auth_mode }} · target {{ project }}.{{ dataset }}</div>
+  </div>
+</body>
+</html>
