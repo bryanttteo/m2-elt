@@ -1,0 +1,23 @@
+[project]
+name = "p1-el"
+version = "0.1.0"
+description = "SCTP Team 2 · Module 1 — Extract & Load (CSV → BigQuery bronze)"
+requires-python = ">=3.11"
+dependencies = [
+    # shared / auth + data
+    "python-dotenv>=1.0",
+    "google-cloud-bigquery>=3.25",
+    "google-cloud-storage>=2.16",
+    "pandas>=2.0",
+    # EL via dlt
+    "dlt[bigquery]>=0.5",
+    # webapp uploader
+    "flask>=3.0",
+    "gunicorn>=21.0",
+]
+
+[dependency-groups]
+dev = ["ruff>=0.5"]
+
+[tool.uv]
+package = false
