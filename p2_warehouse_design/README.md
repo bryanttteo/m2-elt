@@ -12,7 +12,7 @@ Design the **star schema** that Module 3 (dbt) implements. This folder is the *d
 - **`m2-elt_star_schema.drawio`** — overview plan of the dimensional model.
   Documentation: [Drive](https://drive.google.com/file/d/1Cb-3G_E0OHcwrz1ZmtNZbWm5-XjAtr71/view?usp=drive_link).
 - **`PDF: m2-elt_star_schema`** — entity-relationship diagram of the dimensional model.
-  <img width="1200" height="640" alt="image" src="https://github.com/user-attachments/assets/d60473b6-d537-44ea-918d-b25ac21167d6" />
+  ![Star Schema](image.png)
   Online: [dbdiagramio](https://dbdiagram.io/d/m2-elt-6a16fd13b62396d22c82645d)
   Documentation: [Drive](https://drive.google.com/file/d/1U9KXC5qSOBrSx2dRwdxkpBp_2FdNcUku/view?usp=drive_link)
 - Problem Statement and Business Questions, [link](https://docs.google.com/document/d/1geYQtT6bjmq3rdpn3qysy86DH5Obn2BB2E5qaGAfY4s/edit?usp=drive_link)
