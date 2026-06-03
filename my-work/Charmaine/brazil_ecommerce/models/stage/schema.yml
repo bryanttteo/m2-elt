@@ -29,6 +29,7 @@ models:
       - name: order_status
         description: "The status of the order"
         tests:
+          - not_null
           - dbt_utils.accepted_values:
               arguments:
                 accepted_values: ['approved','canceled','created','delivered','invoiced','processing','shipped', 'unavailable']
@@ -108,6 +109,7 @@ models:
       - name: payment_type
         description: "The type of payment used for the order"
         tests:
+          - not_null
           - dbt_utils.accepted_values:
               arguments:
                 accepted_values: ['boleto', 'credit_card', 'debit_card', 'voucher', 'not_defined']

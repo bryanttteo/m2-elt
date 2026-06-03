@@ -29,3 +29,7 @@ SELECT
 FROM source_a orders
 LEFT JOIN source_b b ON orders.order_id = b.order_id
 LEFT JOIN source_c c ON orders.order_id = c.order_id
+WHERE orders.order_id IS NOT NULL AND 
+orders.customer_id IS NOT NULL AND 
+b.order_item_id IS NOT NULL AND 
+b.seller_id IS NOT NULL
