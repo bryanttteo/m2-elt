@@ -1,0 +1,30 @@
+# https://docs.getdbt.com/docs/core/connect-data-platform/bigquery-setup
+# Connection is driven by env vars (see repo-root .env.dev / .env.prod).
+# method: oauth resolves credentials via google.auth.default(), which honours
+# GOOGLE_APPLICATION_CREDENTIALS (service-account keyfile) AND local gcloud ADC —
+# so the same profile works locally, in Dagster, and on Cloud Run.
+brazil_ecommerce:
+  outputs:
+    dev:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('GCP_PROJECT', 'sctp-team2-project2-elt') }}"
+      dataset: "{{ env_var('BQ_BRONZE_DATASET', 'olist_bronze_dev') }}"   # fallback schema; per-layer +schema overrides this
+      location: "{{ env_var('BQ_LOCATION', 'US') }}"
+      threads: 4
+      priority: interactive
+      job_execution_timeout_seconds: 300
+      job_retries: 2
+    prod:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('GCP_PROJECT', 'sctp-team2-project2-elt') }}"
+      dataset: "{{ env_var('BQ_BRONZE_DATASET', 'olist_bronze') }}"
+      location: "{{ env_var('BQ_LOCATION', 'US') }}"
+      threads: 4
+      priority: interactive
+      job_execution_timeout_seconds: 300
+      job_retries: 2
+  target: "{{ env_var('DBT_TARGET', 'dev') }}"
+  config:
+    send_anonymous_usage_stats: False

@@ -1,0 +1,74 @@
+version: 2
+
+# Staging = 1:1 dedup of bronze. Tests assert each PK is unique + not_null,
+# which is exactly what the dedup guarantees. Business-logic tests live in gold_mart.
+
+models:
+  - name: stg_customers
+    description: "Deduplicated customers, one row per customer_id."
+    columns:
+      - name: customer_id
+        description: "Primary key."
+        tests: [unique, not_null]
+
+  - name: stg_orders
+    description: "Deduplicated orders, one row per order_id."
+    columns:
+      - name: order_id
+        description: "Primary key."
+        tests: [unique, not_null]
+
+  - name: stg_order_items
+    description: "Deduplicated order line items, one row per (order_id, order_item_id)."
+    columns:
+      - name: order_id
+        description: "Part of the composite PK; FK to stg_orders."
+        tests: [not_null]
+      - name: order_item_id
+        description: "Part of the composite PK (line number within the order)."
+        tests: [not_null]
+
+  - name: stg_order_payments
+    description: "Deduplicated payments, one row per (order_id, payment_sequential)."
+    columns:
+      - name: order_id
+        description: "Part of the composite PK; FK to stg_orders."
+        tests: [not_null]
+      - name: payment_sequential
+        description: "Part of the composite PK (payment number within the order)."
+        tests: [not_null]
+
+  - name: stg_order_reviews
+    description: "Deduplicated reviews, one row per review_id."
+    columns:
+      - name: review_id
+        description: "Primary key."
+        tests: [unique, not_null]
+
+  - name: stg_products
+    description: "Deduplicated products, one row per product_id."
+    columns:
+      - name: product_id
+        description: "Primary key."
+        tests: [unique, not_null]
+
+  - name: stg_product_category_translation
+    description: "Deduplicated category-name translations, one row per pt category."
+    columns:
+      - name: product_category_name
+        description: "Primary key (Portuguese category name)."
+        tests: [unique, not_null]
+
+  - name: stg_sellers
+    description: "Deduplicated sellers, one row per seller_id."
+    columns:
+      - name: seller_id
+        description: "Primary key."
+        tests: [unique, not_null]
+
+  - name: stg_geolocation
+    description: "Deduplicated geolocation, one row per zip code prefix."
+    columns:
+      - name: geolocation_zip_code_prefix
+        description: "Primary key (collapsed to one lat/lng per zip)."
+        tests: [unique, not_null]

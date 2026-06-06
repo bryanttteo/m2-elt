@@ -1,0 +1,76 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: "Customer dimension."
+    columns:
+      - name: id
+        description: "Primary key (customer_id)."
+        tests: [unique, not_null]
+
+  - name: dim_sellers
+    description: "Seller dimension with geolocation."
+    columns:
+      - name: id
+        description: "Primary key (seller_id)."
+        tests: [unique, not_null]
+
+  - name: dim_products
+    description: "Product dimension with English category name."
+    columns:
+      - name: id
+        description: "Primary key (product_id)."
+        tests: [unique, not_null]
+
+  - name: dim_reviews
+    description: "Review dimension, one row per order."
+    columns:
+      - name: id
+        description: "Primary key (order_id)."
+        tests: [unique, not_null]
+      - name: review_score
+        description: "1 (worst) to 5 (best)."
+
+  - name: fact_orders
+    description: "Order fact, one row per order. FKs reference the dimensions."
+    columns:
+      - name: id
+        description: "Primary key (order_id)."
+        tests: [unique, not_null]
+      - name: customer_id
+        description: "FK to dim_customers."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: id
+      - name: product_id
+        description: "FK to dim_products."
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: id
+      - name: seller_id
+        description: "FK to dim_sellers."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_sellers')
+                field: id
+      - name: order_status
+        description: "Order lifecycle status."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['approved','canceled','created','delivered','invoiced','processing','shipped','unavailable']
+      - name: payment_type
+        description: "Payment method (null coalesced to not_defined)."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['boleto','credit_card','debit_card','voucher','not_defined']

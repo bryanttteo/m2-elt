@@ -1,0 +1,22 @@
+# Cloud Build config for the Olist ELT image.
+#
+# The build CONTEXT is the repo root (".") — it must include p3_dbt_project/, p1_el/,
+# datasets/ — but the Dockerfile lives in a subfolder, so we pass it with -f.
+# `gcloud builds submit --tag` can't do that (it assumes ./Dockerfile), hence this file.
+#
+# Run from the repo root:
+#   gcloud builds submit --config cloudbuild.yaml --substitutions=_IMAGE="$IMAGE" .
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - p6_orchestration/olist_orchestration/Dockerfile
+      - -t
+      - ${_IMAGE}
+      - .
+images:
+  - ${_IMAGE}
+options:
+  # Send logs to Cloud Logging only — avoids needing a logs-bucket permission.
+  logging: CLOUD_LOGGING_ONLY

@@ -1,0 +1,14 @@
+README.md
+pyproject.toml
+setup.cfg
+setup.py
+olist_orchestration/__init__.py
+olist_orchestration/assets.py
+olist_orchestration/config.py
+olist_orchestration/definitions.py
+olist_orchestration/resources.py
+olist_orchestration.egg-info/PKG-INFO
+olist_orchestration.egg-info/SOURCES.txt
+olist_orchestration.egg-info/dependency_links.txt
+olist_orchestration.egg-info/requires.txt
+olist_orchestration.egg-info/top_level.txt

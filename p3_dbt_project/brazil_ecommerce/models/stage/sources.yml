@@ -1,0 +1,138 @@
+version: 2
+
+sources:
+  - name: brazil_ecommerce
+    database: "{{ env_var('GCP_PROJECT', 'sctp-team2-project2-elt') }}"
+    schema: "{{ env_var('BQ_BRONZE_DATASET', 'olist_bronze_dev') }}"
+    tables:
+      - name: olist_customers_raw
+        description: "This table contains information about customers in the Olist e-commerce dataset."
+        columns:
+          - name: customer_id
+            description: "The unique identifier for each customer."
+          - name: customer_unique_id
+            description: "A unique identifier for each customer that can be used to link to other tables."
+          - name: customer_zip_code_prefix
+            description: "The zip code prefix of the customer's address."
+          - name: customer_city
+            description: "The city where the customer is located."
+          - name: customer_state
+            description: "The state where the customer is located."
+      - name: olist_orders_raw
+        description: "This table contains information about orders in the Olist e-commerce dataset."
+        columns:
+          - name: order_id
+            description: "The unique identifier for each order."
+          - name: customer_id
+            description: "The unique identifier for the customer who placed the order."
+          - name: order_status
+            description: "The current status of the order (e.g., delivered, shipped, canceled)."
+          - name: order_purchase_timestamp
+            description: "The timestamp when the order was placed."
+          - name: order_approved_at
+            description: "The timestamp when the order was approved."
+          - name: order_delivered_carrier_date  
+            description: "The timestamp when the order was delivered to the carrier."
+          - name: order_delivered_customer_date
+            description: "The timestamp when the order was delivered to the customer."
+          - name: order_estimated_delivery_date
+            description: "The estimated delivery date for the order."
+      - name: olist_order_items_raw
+        description: "This table contains information about the items in each order in the Olist e  commerce dataset."
+        columns:
+          - name: order_id
+            description: "The unique identifier for the order that contains the item."
+          - name: order_item_id 
+            description: "The unique identifier for each item in the order."
+          - name: product_id
+            description: "The unique identifier for the product that was ordered."
+          - name: seller_id
+            description: "The unique identifier for the seller who sold the product."
+          - name: shipping_limit_date
+            description: "The date by which the item must be shipped."
+          - name: price
+            description: "The price of the item."
+          - name: freight_value
+            description: "The freight value for the item."
+      - name: olist_products_raw
+        description: "This table contains information about the products in the Olist e-commerce dataset."
+        columns:      
+          - name: product_id
+            description: "The unique identifier for each product."
+          - name: product_category_name
+            description: "The category name of the product."
+          - name: product_name_length
+            description: "The length of the product name."
+          - name: product_description_length
+            description: "The length of the product description."
+          - name: product_photos_qty
+            description: "The quantity of photos available for the product."
+          - name: product_weight_g
+            description: "The weight of the product in grams."
+          - name: product_length_cm
+            description: "The length of the product in centimeters."
+          - name: product_height_cm
+            description: "The height of the product in centimeters."
+          - name: product_width_cm
+            description: "The width of the product in centimeters."
+      - name: olist_sellers_raw
+        description: "This table contains information about the sellers in the Olist e-commerce dataset."
+        columns:
+          - name: seller_id
+            description: "The unique identifier for each seller."
+          - name: seller_zip_code_prefix
+            description: "The zip code prefix of the seller's address."
+          - name: seller_city
+            description: "The city where the seller is located."
+          - name: seller_state
+            description: "The state where the seller is located."
+      - name: olist_order_payments_raw
+        description: "This table contains information about the payments for each order in the Olist e-commerce dataset."
+        columns:
+          - name: order_id
+            description: "The unique identifier for the order that the payment is associated with."
+          - name: payment_sequential
+            description: "The sequential number of the payment for the order (e.g., 1 for the first payment, 2 for the second payment, etc.)."
+          - name: payment_type
+            description: "The type of payment used for the order (e.g., credit card, boleto, voucher, etc.)."
+          - name: payment_installments
+            description: "The number of installments for the payment (e.g., 1 for a single payment, 2 for two installments, etc.)."
+          - name: payment_value
+            description: "The total value of the payment." 
+      - name: olist_order_reviews_raw
+        description: "This table contains information about the reviews for each order in the Olist e-commerce dataset."
+        columns:
+          - name: review_id
+            description: "The unique identifier for each review."
+          - name: order_id
+            description: "The unique identifier for the order that the review is associated with."
+          - name: review_score
+            description: "The score given by the customer in the review (e.g., 1 for a very bad review, 5 for a very good review)."
+          - name: review_comment_title
+            description: "The title of the review comment."
+          - name: review_comment_message
+            description: "The message of the review comment."
+          - name: review_creation_date
+            description: "The date when the review was created."
+          - name: review_answer_timestamp
+            description: "The timestamp when the review was answered by the seller."
+      - name: olist_geolocation_raw
+        description: "This table contains information about the geolocation of customers and sellers in the Olist e-commerce dataset."
+        columns:
+          - name: geolocation_zip_code_prefix
+            description: "The zip code prefix for the geolocation."
+          - name: geolocation_lat
+            description: "The latitude of the geolocation."
+          - name: geolocation_lng
+            description: "The longitude of the geolocation."
+          - name: geolocation_city
+            description: "The city for the geolocation."
+          - name: geolocation_state
+            description: "The state for the geolocation."
+      - name: product_category_name_translation_raw
+        description: "This table contains translations for the category names in the Olist e-commerce dataset."
+        columns:
+          - name: product_category_name
+            description: "The original category name in Portuguese."
+          - name: product_category_name_english
+            description: "The translated category name in English."

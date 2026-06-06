@@ -1,0 +1,29 @@
+# Keep the build context small. datasets/ IS included (manual bronze load needs it).
+.git
+my-work
+# Secrets & runtime config must NEVER enter the build context / image.
+# (Prod config is injected at runtime: .env.prod via compose env_file, .env.key mounted.)
+**/secrets/
+**/.env
+**/.env.*
+!**/.env.example
+# Deploy/docs artifacts the image doesn't need.
+run-dagster.sh
+cloudbuild.yaml
+notes
+**/.venv
+**/venv
+**/node_modules
+**/__pycache__
+**/.pytest_cache
+**/target
+**/dbt_packages
+**/.meltano
+**/.tmp_dagster_home*
+**/*.log
+assignment
+p2_warehouse_design
+p4_data_quality
+p5_analytics
+p7_docs
+plan

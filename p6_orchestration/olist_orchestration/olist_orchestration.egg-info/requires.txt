@@ -1,0 +1,10 @@
+dagster
+dagster-cloud
+dagster-dbt
+dbt-bigquery
+google-cloud-bigquery
+python-dotenv
+
+[dev]
+dagster-webserver
+pytest
