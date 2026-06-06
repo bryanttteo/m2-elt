@@ -46,21 +46,26 @@ Check if `.env.dev` already exists:
 ls .env.dev
 ```
 
-If it's **missing**, create it from the example:
-```bash
-cp .env.example .env.dev
-```
+If it's **missing**:
+1. Check the team Google Drive first — a pre-filled `.env.dev` may already be there:
+   > **[Google Drive → SCTP Team2 → keys](https://drive.google.com/drive/u/1/folders/16cAsp_Pcq10lgHRpRnOQkW1scUHejuGe)**
+   >
+   > Download `.env.dev` from there and copy it to the repo root.
 
-Then open `.env.dev` and confirm these values match your setup:
-```dotenv
-GCP_PROJECT=sctp-team2-project2-elt
-GOOGLE_APPLICATION_CREDENTIALS=./secrets/sctp-team2-project2-elt-1853e88c8665.json
-BQ_LOCATION=US
-BQ_BRONZE_DATASET=olist_bronze_dev
-BQ_STAGE_DATASET=olist_stage_dev
-BQ_GOLD_DATASET=olist_gold_mart_dev
-OLIST_DATA_DIR=./datasets
-```
+2. If there's no `.env.dev` in Drive, create one from the example:
+   ```bash
+   cp .env.example .env.dev
+   ```
+   Then open `.env.dev` and confirm these values:
+   ```dotenv
+   GCP_PROJECT=sctp-team2-project2-elt
+   GOOGLE_APPLICATION_CREDENTIALS=./secrets/sctp-team2-project2-elt-1853e88c8665.json
+   BQ_LOCATION=US
+   BQ_BRONZE_DATASET=olist_bronze_dev
+   BQ_STAGE_DATASET=olist_stage_dev
+   BQ_GOLD_DATASET=olist_gold_mart_dev
+   OLIST_DATA_DIR=./datasets
+   ```
 
 > The dbt profile uses `method: oauth`, which reads `GOOGLE_APPLICATION_CREDENTIALS`.
 > No `gcloud auth` is required if the keyfile is present. (If you'd rather use your own
