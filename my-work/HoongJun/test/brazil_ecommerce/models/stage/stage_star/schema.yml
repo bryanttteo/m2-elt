@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: "Dimension table for customers."
+    columns:
+      - name: id
+        description: "The primary key for this table"
+        tests:
+          - unique
+          - not_null
+  - name: dim_products
+    description: "Dimension table for products."
+    columns:
+      - name: id
+        description: "The primary key for this table"
+        tests:
+          - unique
+          - not_null
+  - name: dim_reviews
+    description: "Dimension table for reviews."
+    columns:
+      - name: id
+        description: "The primary key for this table"
+        tests:
+          - unique
+          - not_null
+  - name: dim_sellers
+    description: "Dimension table for sellers."
+    columns:
+      - name: id
+        description: "The primary key for this table"
+        tests:
+          - unique
+          - not_null

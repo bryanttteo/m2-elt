@@ -1,0 +1,133 @@
+version: 2
+
+# The following schema works with dbt-core > 1.10 and above
+# Comment the line 'arguments:' to work on older versions of dbt (dbt-core < 1.10 and below)
+
+models:
+  - name: fact_orders_stage
+    description: "Fact table for orders."
+    columns:
+      - name: id
+        description: "The primary key for this table"
+        tests:
+          - unique
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: string
+      - name: customer_id
+        description: "The foreign key to dim_customers"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: id
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: string
+      - name: order_status
+        description: "The status of the order"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['approved','canceled','created','delivered','invoiced','processing','shipped', 'unavailable']
+      - name: order_purchase_timestamp
+        description: "The timestamp when the order was purchased"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: timestamp
+      - name: order_approved_at
+        description: "The timestamp when the order was approved"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: timestamp
+      - name: order_delivered_carrier_date
+        description: "The timestamp when delivered by the carrier"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: timestamp
+      - name: order_delivered_customer_date
+        description: "The timestamp when delivered to the customer"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: timestamp
+      - name: order_estimated_delivery_date
+        description: "The timestamp estimated to be delivered"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: timestamp
+      - name: order_item_id
+        description: "The foreign key to dim_products"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: id
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: INT64
+      - name: seller_id
+        description: "The foreign key to dim_sellers"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_sellers')
+                field: id
+      - name: shipping_limit_date
+        description: "The timestamp on item's shipping limit date"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: timestamp
+      - name: price
+        description: "The price of the item"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: FLOAT64
+      - name: freight_value
+        description: "The freight value of the item"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: FLOAT64
+      - name: payment_sequential
+        description: "The number of times payment has been attempted for the order"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: INT64
+      - name: payment_type
+        description: "The type of payment used for the order"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['boleto', 'credit_card', 'debit_card', 'voucher', 'not_defined']
+      - name: payment_installments
+        description: "The number of installments for the payment"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: INT64
+      - name: payment_value
+        description: "The total payment value for the order"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: FLOAT64
+
+
+############
+#    tests:  # tests that apply to the whole model or table level, thats why its idented at the same level as name and description
+#      - dbt_utils.expression_is_true:
+#          arguments:
+#            expression: "ROUND(sale_dollars, 1) = TRUNC(bottles_sold * state_bottle_retail, 1)"
+#            severity: error # accepts only `error` and `warn` default is error

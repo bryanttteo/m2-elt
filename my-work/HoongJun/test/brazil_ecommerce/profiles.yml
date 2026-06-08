@@ -1,0 +1,21 @@
+# https://docs.getdbt.com/docs/core/connect-data-platform/bigquery-setup
+brazil_ecommerce: # profile name. 
+# This is where dbt looks for from dbt_project.yml -> find the named profile here. 
+# Can also be overwritten by dbt run --profiles. See dbt run --help for more info
+  outputs:
+    dev:
+      dataset: brazil_ecommerce_proj # dataset in BigQuery where dbt will create tables and views
+      job_execution_timeout_seconds: 300
+      job_retries: 2
+      location: US
+      method: service-account
+      keyfile: /Users/cheonghoongjun/Documents/dev/github-dev/sctp-dsai-forked/dsai-m2-elt/m2-elt/my-work/HoongJun/test/secrets/sctp-team2-project2-elt-1853e88c8665.json
+      priority: interactive
+      project: sctp-team2-project2-elt # GCP project id
+      threads: 1
+      type: bigquery
+  target: dev # default target for profile, points to 1 of the output above 
+  # Usually we use 'dev' for development and 'prod' for production
+  # define target in dbt CLI via --target
+  config:
+    send_anonymous_usage_stats: False

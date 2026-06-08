@@ -6,37 +6,66 @@ models:
     columns:
       - name: id
         description: "Primary key (customer_id)."
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: STRING
 
   - name: dim_sellers
     description: "Seller dimension with geolocation."
     columns:
       - name: id
         description: "Primary key (seller_id)."
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: STRING
 
   - name: dim_products
     description: "Product dimension with English category name."
     columns:
       - name: id
         description: "Primary key (product_id)."
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: STRING
 
   - name: dim_reviews
     description: "Review dimension, one row per order."
     columns:
       - name: id
         description: "Primary key (order_id)."
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: STRING
       - name: review_score
         description: "1 (worst) to 5 (best)."
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: INT64
 
   - name: fact_orders
     description: "Order fact, one row per order. FKs reference the dimensions."
     columns:
       - name: id
         description: "Primary key (order_id)."
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: STRING
       - name: customer_id
         description: "FK to dim_customers."
         tests:
@@ -45,6 +74,53 @@ models:
               arguments:
                 to: ref('dim_customers')
                 field: id
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: STRING
+      - name: order_status
+        description: "Order lifecycle status."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['approved','canceled','created','delivered','invoiced','processing','shipped','unavailable']
+      - name: order_purchase_timestamp
+        description: "Timestamp when the order was placed."
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: TIMESTAMP
+      - name: order_approved_at
+        description: "Timestamp when the order was approved."
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: TIMESTAMP
+      - name: order_delivered_carrier_date
+        description: "Timestamp when delivered to the carrier."
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: TIMESTAMP
+      - name: order_delivered_customer_date
+        description: "Timestamp when delivered to the customer."
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: TIMESTAMP
+      - name: order_estimated_delivery_date
+        description: "Estimated delivery timestamp."
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: TIMESTAMP
+      - name: order_item_id
+        description: "Line number within the order."
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: INT64
       - name: product_id
         description: "FK to dim_products."
         tests:
@@ -60,13 +136,30 @@ models:
               arguments:
                 to: ref('dim_sellers')
                 field: id
-      - name: order_status
-        description: "Order lifecycle status."
+      - name: shipping_limit_date
+        description: "Timestamp of the item shipping deadline."
         tests:
-          - not_null
-          - accepted_values:
+          - dbt_expectations.expect_column_values_to_be_of_type:
               arguments:
-                values: ['approved','canceled','created','delivered','invoiced','processing','shipped','unavailable']
+                column_type: TIMESTAMP
+      - name: price
+        description: "Item price."
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: FLOAT64
+      - name: freight_value
+        description: "Freight cost for the item."
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: FLOAT64
+      - name: payment_sequential
+        description: "Payment attempt number within the order."
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: INT64
       - name: payment_type
         description: "Payment method (null coalesced to not_defined)."
         tests:
@@ -74,3 +167,15 @@ models:
           - accepted_values:
               arguments:
                 values: ['boleto','credit_card','debit_card','voucher','not_defined']
+      - name: payment_installments
+        description: "Number of payment installments."
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: INT64
+      - name: payment_value
+        description: "Total payment amount."
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: FLOAT64
