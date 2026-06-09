@@ -11,7 +11,7 @@ dbt-bigquery, dagster 1.12, meltano 4.0, Google Cloud SDK (`bq`/`gcloud`).
 ## 0. Prerequisites
 - **git**, **conda** (Miniconda/Anaconda), **Google Cloud SDK** (`gcloud`, `bq`).
 - Access to GCP project **`sctp-team2-project2-elt`** (BigQuery Data Editor + Job User).
-- The service-account keyfile **`sctp-team2-project2-elt-1853e88c8665.json`**
+- The service-account keyfile **`sctp-team2-project2-elt-ROTATED-dbcb3cd092f4.json`**
   (from the team vault — it is git-ignored, never commit it).
 
 ## 1. Clone and enter the repo
@@ -25,16 +25,16 @@ git clone <repo-url> && cd m2-elt
 
 Check if the keyfile already exists:
 ```bash
-ls secrets/sctp-team2-project2-elt-1853e88c8665.json
+ls secrets/sctp-team2-project2-elt-ROTATED-dbcb3cd092f4.json
 ```
 
 If it's **missing**, download it from the team Google Drive:
-> **Google Drive → SCTP Team2 → keys → `sctp-team2-project2-elt-1853e88c8665.json`**
+> **Google Drive → SCTP Team2 → keys → `sctp-team2-project2-elt-ROTATED-dbcb3cd092f4.json`**
 
 Then place it in the repo:
 ```bash
 mkdir -p secrets
-cp ~/Downloads/sctp-team2-project2-elt-1853e88c8665.json secrets/
+cp ~/Downloads/sctp-team2-project2-elt-ROTATED-dbcb3cd092f4.json secrets/
 ```
 
 > **Never commit this file** — it is git-ignored.
@@ -59,7 +59,7 @@ If it's **missing**:
    Then open `.env.dev` and confirm these values:
    ```dotenv
    GCP_PROJECT=sctp-team2-project2-elt
-   GOOGLE_APPLICATION_CREDENTIALS=./secrets/sctp-team2-project2-elt-1853e88c8665.json
+   GOOGLE_APPLICATION_CREDENTIALS=./secrets/sctp-team2-project2-elt-ROTATED-dbcb3cd092f4.json
    BQ_LOCATION=US
    BQ_BRONZE_DATASET=olist_bronze_dev
    BQ_STAGE_DATASET=olist_stage_dev
@@ -139,10 +139,30 @@ make dbt-test  ENV=dev          # run just the tests
 > (5 tables: `fact_orders` + 4 `dim_*`). Terminal output should end with
 > `PASS=51 ... ERROR=0`.
 
-### Option C — Meltano load path instead of manual
+### Option C — switch the bronze load method (which tap feeds bronze)
+
+`BRONZE_LOAD_METHOD` selects how bronze is populated. Set it in your `.env.<env>`
+(persistent) or `export` it for a one-off run. Three values:
+
+| Value | Source | Meltano project |
+|---|---|---|
+| `manual` | `datasets/*.csv` straight into BQ via load jobs | — (code path in `assets.py`) |
+| `meltano_csv` (alias `meltano`) | `datasets/*.csv` | `p1_el/meltano-raw-csv` (tap-csv) |
+| `meltano_postgres` | **Cloud SQL `oltp.*`** | `p1_el/olist-meltano-pg` (tap-postgres) |
+
+> The default in `.env.dev` is **`meltano_postgres`** (the live OLTP source). To fall
+> back to CSV — e.g. offline, no Cloud SQL access — override it:
+> ```bash
+> export BRONZE_LOAD_METHOD=manual         # or meltano_csv
+> ```
+> The `meltano_postgres` path needs the `POSTGRES_*` vars in `.env.dev` (§2b) and network
+> reachability to the Cloud SQL public IP. All three paths land in the same `olist_*_raw`
+> bronze tables, so stage/gold are identical downstream.
+
+Run a Meltano path directly (outside Dagster):
 ```bash
-export BRONZE_LOAD_METHOD=meltano
-cd p1_el/meltano-raw-csv && make setup && make run   # tap-csv -> target-bigquery
+cd p1_el/olist-meltano-pg && meltano --environment=dev run tap-postgres target-bigquery
+# CSV variant: cd p1_el/meltano-raw-csv && make setup && make run
 ```
 
 > **Verify (BigQuery):** Same as Option B step i — check `olist_bronze_dev` for 9 tables.

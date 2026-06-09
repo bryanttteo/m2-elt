@@ -31,6 +31,7 @@ WORKDIR /app
 COPY p6_orchestration/olist_orchestration/ /app/p6_orchestration/olist_orchestration/
 COPY p3_dbt_project/                        /app/p3_dbt_project/
 COPY p1_el/meltano-raw-csv/                  /app/p1_el/meltano-raw-csv/
+COPY p1_el/olist-meltano-pg/                 /app/p1_el/olist-meltano-pg/
 COPY datasets/                               /app/datasets/
 # NOTE: .env.prod is intentionally NOT baked in (it is git-ignored, which would break
 # clean CI builds). Prod config is injected at runtime by run-dagster.sh via
@@ -42,6 +43,11 @@ RUN pip install -e /app/p6_orchestration/olist_orchestration \
 
 # Pre-fetch dbt packages so the image is self-contained.
 RUN cd /app/p3_dbt_project/brazil_ecommerce && dbt deps || true
+
+# Pre-install Meltano plugins for both bronze load paths so `meltano run` works at
+# runtime without a network install step (tap-csv, tap-postgres, target-bigquery).
+RUN cd /app/p1_el/meltano-raw-csv  && meltano install || true
+RUN cd /app/p1_el/olist-meltano-pg && meltano install || true
 
 WORKDIR /app/p6_orchestration/olist_orchestration
 

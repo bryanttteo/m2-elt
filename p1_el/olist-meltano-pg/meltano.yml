@@ -3,8 +3,12 @@ default_environment: dev
 project_id: olist-meltano-pg
 
 environments:
+  # All plugin config is driven by ${ENV_VARS} (loaded from .env.<env>), so each
+  # environment just needs to be declared — no per-environment overrides required.
   - name: dev
-  
+  - name: prod
+  - name: jun
+
 plugins:
   extractors:
     - name: tap-postgres
