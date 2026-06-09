@@ -1,0 +1,138 @@
+version: 1
+default_environment: dev
+project_id: olist-meltano-pg
+
+environments:
+  - name: dev
+  
+plugins:
+  extractors:
+    - name: tap-postgres
+      variant: meltanolabs
+      pip_url: git+https://github.com/MeltanoLabs/tap-postgres.git
+      config:
+        host: ${POSTGRES_HOST}
+        port: ${POSTGRES_PORT}
+        user: ${POSTGRES_USER}
+        password: ${POSTGRES_PASSWORD}
+        database: ${POSTGRES_DB}
+        ssl: true
+        filter_schemas:
+          - oltp
+
+      select:
+        - oltp-olist_customers.*
+        - oltp-olist_geolocation.*
+        - oltp-olist_orders.*
+        - oltp-olist_order_items.*
+        - oltp-olist_order_payments.*
+        - oltp-olist_order_reviews.*
+        - oltp-olist_products.*
+        - oltp-olist_sellers.*
+        - oltp-product_category_name_translation.*
+
+      metadata:
+        oltp-olist_customers:
+          replication-method: INCREMENTAL
+          replication-key: updated_at
+          key-properties:
+            - customer_id
+
+        oltp-olist_geolocation:
+          replication-method: INCREMENTAL
+          replication-key: updated_at
+          key-properties:
+            - geolocation_zip_code_prefix
+
+        oltp-olist_orders:
+          replication-method: INCREMENTAL
+          replication-key: updated_at
+          key-properties:
+            - order_id
+
+        oltp-olist_order_items:
+          replication-method: INCREMENTAL
+          replication-key: updated_at
+          key-properties:
+            - order_id
+            - order_item_id
+
+        oltp-olist_order_payments:
+          replication-method: INCREMENTAL
+          replication-key: updated_at
+          key-properties:
+            - order_id
+            - payment_sequential
+
+        oltp-olist_order_reviews:
+          replication-method: INCREMENTAL
+          replication-key: updated_at
+          key-properties:
+            - review_id
+            - order_id
+
+        oltp-olist_products:
+          replication-method: INCREMENTAL
+          replication-key: updated_at
+          key-properties:
+            - product_id
+
+        oltp-olist_sellers:
+          replication-method: INCREMENTAL
+          replication-key: updated_at
+          key-properties:
+            - seller_id
+
+        oltp-product_category_name_translation:
+          replication-method: INCREMENTAL
+          replication-key: updated_at
+          key-properties:
+            - product_category_name
+
+  loaders:
+    - name: target-bigquery
+      variant: z3z1ma
+      pip_url: git+https://github.com/z3z1ma/target-bigquery.git setuptools<80
+      config:
+        project: ${GCP_PROJECT}
+        dataset: ${BQ_BRONZE_DATASET}
+        credentials_path: ${GOOGLE_APPLICATION_CREDENTIALS}
+        location: ${BQ_LOCATION}
+        method: batch_job
+        # Default batch_size is 500 rows -> the 1M-row geolocation stream becomes
+        # ~2000 load jobs into one date-partitioned staging table, which trips
+        # BigQuery's "too many partitioned table update operations" 429 quota.
+        # 100k rows/batch keeps every stream to a handful of load jobs.
+        batch_size: 100000
+        denormalized: true
+        flattening_enabled: true
+        flattening_max_depth: 1
+        upsert: true
+        dedupe_before_upsert: true
+        # Alias each tap-postgres stream (oltp-<table>) to the bronze _raw table the
+        # dbt sources (p3_dbt_project/.../stage/sources.yml) expect, so the Postgres
+        # load path feeds the SAME models as the tap-csv path. SDK-native stream_maps.
+        stream_maps:
+          oltp-olist_customers:
+            __alias__: olist_customers_raw
+          oltp-olist_geolocation:
+            __alias__: olist_geolocation_raw
+          oltp-olist_orders:
+            __alias__: olist_orders_raw
+          oltp-olist_order_items:
+            __alias__: olist_order_items_raw
+          oltp-olist_order_payments:
+            __alias__: olist_order_payments_raw
+          oltp-olist_order_reviews:
+            __alias__: olist_order_reviews_raw
+          oltp-olist_products:
+            __alias__: olist_products_raw
+          oltp-olist_sellers:
+            __alias__: olist_sellers_raw
+          oltp-product_category_name_translation:
+            __alias__: product_category_name_translation_raw
+
+jobs:
+  - name: postgres-to-bigquery-bronze
+    tasks:
+      - tap-postgres target-bigquery

@@ -132,25 +132,32 @@ def bronze_raw_commerce(context: AssetExecutionContext):
     """Load all Olist CSVs into the BigQuery bronze dataset, then verify every
     CSV's record count landed in its table.
 
-    Two load paths (BRONZE_LOAD_METHOD):
-      - "manual"  (default): load datasets/*.csv straight into BQ via load jobs.
-      - "meltano": run the tap-csv -> target-bigquery pipeline in p1_el/meltano-raw-csv.
-    Both land in the SAME bronze _raw tables (olist_*_raw)."""
+    Three load paths (BRONZE_LOAD_METHOD):
+      - "manual"          (default): load datasets/*.csv straight into BQ via load jobs.
+      - "meltano_csv":    run tap-csv -> target-bigquery in p1_el/meltano-raw-csv.
+      - "meltano_postgres": run tap-postgres -> target-bigquery in p1_el/olist-meltano-pg.
+    The manual and meltano_csv paths land in the SAME bronze _raw tables (olist_*_raw)
+    and are row-count verified against datasets/*.csv. The meltano_postgres path reads
+    Cloud SQL (oltp.*) and is not CSV-verifiable, so that check is skipped."""
     method = config.BRONZE_LOAD_METHOD
     client = _bq_client()
 
     # 1) run the load
-    if method == "meltano":
-        context.log.info(f"Loading bronze via Meltano ({config.MELTANO_DIR})")
+    if method in ("meltano_csv", "meltano_postgres"):
+        if method == "meltano_postgres":
+            meltano_dir, tap = config.MELTANO_PG_DIR, "tap-postgres"
+        else:
+            meltano_dir, tap = config.MELTANO_CSV_DIR, "tap-csv"
+        context.log.info(f"Loading bronze via Meltano ({meltano_dir}) [{tap} -> target-bigquery]")
         subprocess.run(
-            ["meltano", f"--environment={config.OLIST_ENV}", "run", "tap-csv", "target-bigquery"],
-            cwd=config.MELTANO_DIR, check=True,
+            ["meltano", f"--environment={config.OLIST_ENV}", "run", tap, "target-bigquery"],
+            cwd=meltano_dir, check=True,
         )
     else:
         if client is None:
             raise RuntimeError(
                 "google-cloud-bigquery is required for the manual load path. "
-                "pip install google-cloud-bigquery, or set BRONZE_LOAD_METHOD=meltano."
+                "pip install google-cloud-bigquery, or set BRONZE_LOAD_METHOD=meltano_csv."
             )
         context.log.info(f"Loading bronze manually from {config.OLIST_DATA_DIR}")
         for t in config.BRONZE_TABLES:
@@ -160,7 +167,15 @@ def bronze_raw_commerce(context: AssetExecutionContext):
             _load_csv_to_bq(client, t, csv_path)
             context.log.info(f"  loaded {t} <- {csv_path.name}")
 
-    # 2) verify CSV -> bronze row counts
+    # 2) verify CSV -> bronze row counts.
+    # The Postgres path has no source CSVs to compare against — emit the asset
+    # outputs and skip the CSV-vs-BQ reconciliation.
+    if method == "meltano_postgres":
+        context.log.info("Postgres source — skipping CSV-vs-BQ record verification.")
+        for t in config.BRONZE_TABLES:
+            yield Output(None, output_name=t)
+        return
+
     bq = _bq_row_counts(client) if client is not None else None
     shortfalls = []
     context.log.info("=== Bronze load verification (CSV records vs BigQuery rows) ===")
