@@ -12,12 +12,16 @@ on:
   push:
     branches: [main]
     paths:
+      # The two data/transform subprojects baked into the Dagster prod image.
       - 'p1_el/**'
       - 'p3_dbt_project/**'
-      # also rebuild when the image / orchestration code or build config changes:
-      - 'p6_orchestration/olist_orchestration/**'
+      # plus this workflow's own build/deploy infra (so changes here redeploy):
       - 'cloudbuild.yaml'
+      - 'run-dagster.sh'
+      - 'nginx-dagster.conf'
       - '.github/workflows/deploy-prod.yml'
+      # NOTE: p6_orchestration is intentionally NOT here. It will get its own workflow
+      # targeting a separate VM / Cloud Run (see deploy-orchestrator.yml, future).
   workflow_dispatch: {}   # allow manual runs from the Actions tab
 
 env:
@@ -51,17 +55,44 @@ jobs:
             --project "$PROJECT" .
 
       - name: Redeploy on VM if it is running
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          ENV_PROD: ${{ secrets.ENV_PROD }}
         run: |
           STATUS=$(gcloud compute instances describe "$VM" --zone "$ZONE" \
             --project "$PROJECT" --format='value(status)' 2>/dev/null || echo ABSENT)
           echo "VM status: $STATUS"
-          if [ "$STATUS" = "RUNNING" ]; then
-            gcloud compute ssh "$VM" --zone "$ZONE" --project "$PROJECT" \
-              --tunnel-through-iap \
-              --command="bash run-dagster.sh && echo 'Deployed APP_VERSION:' && docker exec olist-dagster printenv APP_VERSION && docker ps"
-          else
+          if [ "$STATUS" != "RUNNING" ]; then
             echo "VM not running ($STATUS) — skipping redeploy. Morning recreate pulls :latest."
+            exit 0
           fi
+
+          # CI logs into the VM as its own user, so it brings its own deploy assets rather
+          # than relying on the morning scp (which lands in a different home dir).
+          # run-dagster.sh + nginx-dagster.conf come from the checkout; .env.key is the SA
+          # JSON (== GCP_SA_KEY secret); .env.prod from the ENV_PROD secret.
+          umask 077
+          printf '%s' "$GCP_SA_KEY" > .env.key
+          printf '%s' "$ENV_PROD"   > .env.prod
+
+          gcloud compute scp --tunnel-through-iap --zone "$ZONE" --project "$PROJECT" \
+            run-dagster.sh nginx-dagster.conf .env.prod .env.key "$VM":~
+
+          gcloud compute ssh "$VM" --zone "$ZONE" --project "$PROJECT" --tunnel-through-iap \
+            --command='
+              set -euo pipefail
+              chmod 600 .env.key
+              # nginx basic-auth file (team2/password, matching the manual morning setup);
+              # only created if absent so an existing one is preserved.
+              if [ ! -f dagster.htpasswd ]; then
+                HASH=$(openssl passwd -apr1 "password")
+                echo "team2:$HASH" > dagster.htpasswd
+              fi
+              docker-credential-gcr configure-docker --registries=us-central1-docker.pkg.dev
+              bash run-dagster.sh
+              echo "Deployed APP_VERSION:"; docker exec olist-dagster printenv APP_VERSION
+              docker ps
+            '
 
       - name: Summary
         if: always()
