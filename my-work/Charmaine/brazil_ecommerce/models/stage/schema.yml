@@ -14,7 +14,7 @@ models:
           - not_null
           - relationships:
               to: ref('dim_reviews')
-              field: id
+              field: order_id
           - dbt_expectations.expect_column_values_to_be_of_type:
               column_type: STRING
       

@@ -69,23 +69,55 @@ joined_table AS (
         c.payment_sequential,
         LOWER(COALESCE(c.payment_type, 'not_defined')) AS payment_type,
         c.payment_installments,
-        c.payment_value
+        c.payment_value,
+
+        -- Add row number for deduplication
+        ROW_NUMBER() OVER (
+            PARTITION BY orders.order_id, COALESCE(b.order_item_id, 0)
+            ORDER BY
+                orders.customer_id  -- tie breaker to ensure deterministic
+        ) AS row_num
         
     FROM source_a orders
     LEFT JOIN source_b b ON orders.order_id = b.order_id
     LEFT JOIN source_c c ON orders.order_id = c.order_id
     -- Deduplicate: Keep one row per order-item, with the first payment method
     -- FIX: Handle deduplication safely - only for rows that have order_item_id
-    QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY orders.order_id, COALESCE(b.order_item_id, 0)
-    ORDER BY 
+ --   QUALIFY ROW_NUMBER() OVER (
+ --   PARTITION BY orders.order_id, COALESCE(b.order_item_id, 0)
+ --   ORDER BY 
 --        CASE WHEN c.payment_sequential IS NULL THEN 999 ELSE c.payment_sequential END,
-        orders.customer_id
-) = 1
+ --       orders.customer_id
+ --) = 1
 --    QUALIFY ROW_NUMBER() OVER (
 --        PARTITION BY orders.order_id, b.order_item_id 
 --        ORDER BY c.payment_sequential
 --    ) = 1
+),
+
+-- Filter to row_num = 1 (keeps customer_id from original row)
+deduped AS (
+    SELECT 
+        id,
+        customer_id,  -- This will always have the value from source_a
+        order_status,
+        order_purchase_timestamp,
+        order_approved_at,
+        order_delivered_carrier_date,
+        order_delivered_customer_date,
+        order_estimated_delivery_date,
+        order_item_id,
+        product_id,
+        seller_id,
+        shipping_limit_date,
+        price,
+        freight_value,
+        payment_sequential,
+        payment_type,
+        payment_installments,
+        payment_value
+    FROM joined_table
+    WHERE row_num = 1
 ),
 
 -- Validate numeric ranges (no need to handle NULLs for status/type anymore)
@@ -124,7 +156,7 @@ validated_data AS (
         payment_installments,
         payment_value
         
-    FROM joined_table
+    FROM deduped    --joined_table
 ),
 
 -- Add data quality flags
@@ -217,4 +249,5 @@ SELECT
     has_missing_payment_info,
     has_no_items
 FROM quality_checks
-ORDER BY order_purchase_timestamp DESC
+WHERE customer_id IS NOT NULL  -- Final safety filter
+ORDER BY order_purchase_timestamp DESC, id

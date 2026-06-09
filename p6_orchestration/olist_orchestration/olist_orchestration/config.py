@@ -41,11 +41,21 @@ BQ_GOLD_DATASET = os.getenv("BQ_GOLD_DATASET", "olist_gold_mart_dev")
 OLIST_DATA_DIR = Path(os.getenv("OLIST_DATA_DIR", str(REPO_ROOT / "datasets")))
 if not OLIST_DATA_DIR.is_absolute():
     OLIST_DATA_DIR = (REPO_ROOT / OLIST_DATA_DIR).resolve()
-# manual = load datasets/*.csv straight into BQ; meltano = run the tap-csv pipeline.
+# How to populate bronze. One of:
+#   manual          - load datasets/*.csv straight into BQ via load jobs (default).
+#   meltano_csv     - run the tap-csv -> target-bigquery pipeline (p1_el/meltano-raw-csv).
+#   meltano_postgres- run the tap-postgres -> target-bigquery pipeline (p1_el/olist-meltano-pg).
+# Legacy alias: "meltano" is treated as "meltano_csv" for backward compatibility.
 BRONZE_LOAD_METHOD = os.getenv("BRONZE_LOAD_METHOD", "manual")
+if BRONZE_LOAD_METHOD == "meltano":
+    BRONZE_LOAD_METHOD = "meltano_csv"
 
 DBT_DIR = REPO_ROOT / "p3_dbt_project" / "brazil_ecommerce"
-MELTANO_DIR = REPO_ROOT / "p1_el" / "meltano-raw-csv"
+# Two interchangeable Meltano projects feeding bronze, selected by BRONZE_LOAD_METHOD:
+MELTANO_CSV_DIR = REPO_ROOT / "p1_el" / "meltano-raw-csv"      # tap-csv  (datasets/*.csv)
+MELTANO_PG_DIR = REPO_ROOT / "p1_el" / "olist-meltano-pg"      # tap-postgres (Cloud SQL oltp)
+# Backwards-compatible alias for code/tests that referenced the single MELTANO_DIR.
+MELTANO_DIR = MELTANO_CSV_DIR
 
 # dbt source name (from sources.yml) — used to build bronze asset keys that line
 # up with the source assets dagster-dbt generates: AssetKey([source_name, table]).

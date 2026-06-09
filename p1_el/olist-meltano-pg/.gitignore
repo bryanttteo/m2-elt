@@ -1,0 +1,7 @@
+/venv
+/.meltano
+.env
+# Local convenience symlinks (single source of truth lives at repo root):
+#   .env     -> ../../.env.dev
+#   secrets  -> ../../secrets
+/secrets

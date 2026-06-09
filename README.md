@@ -79,8 +79,11 @@ make dev                          # then materialize job `olist_full_refresh`
 make dbt-build ENV=dev            # bronze must already be loaded
 make meltano-run                  # optional: Meltano bronze load path
 ```
-Bronze loads from `datasets/*.csv` by default (`BRONZE_LOAD_METHOD=manual`); set
-`BRONZE_LOAD_METHOD=meltano` to use the Meltano tap-csv → target-bigquery path instead.
+Bronze loads from `datasets/*.csv` by default (`BRONZE_LOAD_METHOD=manual`). Alternatives:
+`BRONZE_LOAD_METHOD=meltano_csv` runs the Meltano tap-csv → target-bigquery path
+(`p1_el/meltano-raw-csv`); `BRONZE_LOAD_METHOD=meltano_postgres` runs tap-postgres →
+target-bigquery from Cloud SQL (`p1_el/olist-meltano-pg`). (`meltano` is a legacy alias
+for `meltano_csv`.)
 
 ### Project conventions
 - **Medallion naming:** silver = staging + intermediate combined (no separate staging folder); bronze = the raw dataset EL lands.

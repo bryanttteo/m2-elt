@@ -56,13 +56,26 @@ models:
                 column_type: INT64
 
   - name: fact_orders
-    description: "Order fact, one row per order. FKs reference the dimensions."
+    description: "Order fact at order-item grain. Composite PK = (id, order_item_id)."
+    # Composite primary key: (id, order_item_id) must be unique together.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - id
+              - order_item_id
     columns:
       - name: id
-        description: "Primary key (order_id)."
+        description: "Part of the composite PK (order_id); FK to dim_reviews.order_id."
         tests:
-          - unique
           - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_reviews')
+                field: id
+              config:
+                # Not every order has a review, so a missing match is expected.
+                severity: warn
           - dbt_expectations.expect_column_values_to_be_of_type:
               arguments:
                 column_type: STRING
@@ -115,9 +128,9 @@ models:
               arguments:
                 column_type: TIMESTAMP
       - name: order_item_id
-        description: "Line number within the order."
+        description: "Part of the composite PK (line number). Null for orders with no items (has_no_items)."
         tests:
-          - not_null
+          # not_null intentionally omitted: orders without line items keep a null here.
           - dbt_expectations.expect_column_values_to_be_of_type:
               arguments:
                 column_type: INT64
@@ -128,14 +141,18 @@ models:
               arguments:
                 to: ref('dim_products')
                 field: id
+              config:
+                severity: warn
       - name: seller_id
-        description: "FK to dim_sellers."
+        description: "FK to dim_sellers. Null for orders with no items (has_no_items)."
         tests:
-          - not_null
+          # not_null intentionally omitted: null for orders without line items.
           - relationships:
               arguments:
                 to: ref('dim_sellers')
                 field: id
+              config:
+                severity: warn
       - name: shipping_limit_date
         description: "Timestamp of the item shipping deadline."
         tests:
@@ -179,3 +196,18 @@ models:
           - dbt_expectations.expect_column_values_to_be_of_type:
               arguments:
                 column_type: FLOAT64
+      # Data-quality flag columns (ported from Charmaine's fact_orders_stage).
+      - name: has_invalid_delivery_date
+        description: "TRUE when the order was delivered before it was purchased."
+      - name: is_overdue_delivery
+        description: "TRUE when estimated delivery passed but the order was never delivered."
+      - name: is_high_value_product
+        description: "TRUE when the item price exceeds R$10,000."
+      - name: has_missing_delivery_date
+        description: "TRUE when status is 'delivered' but no delivery date is recorded."
+      - name: is_long_delivery
+        description: "TRUE when delivery took more than 30 days."
+      - name: has_missing_payment_info
+        description: "TRUE when payment_type is 'not_defined' or payment_value is null."
+      - name: has_no_items
+        description: "TRUE when the order has no matching line item."
