@@ -17,7 +17,7 @@ WITH item AS (
         review_comment_message,
         review_answer_timestamp,
         review_creation_date
-    FROM {{ source('brazil_ecommerce', 'olist_order_reviews_raw') }}
+    FROM {{ ref('stg_order_reviews') }}
 ),
 
 grouped_data AS (
