@@ -225,7 +225,8 @@ SELECT
     has_missing_delivery_date,
     is_long_delivery,
     has_missing_payment_info,
-    has_no_items
+    has_no_items,
+    CURRENT_TIMESTAMP() AS cleaned_at
 FROM quality_checks
 WHERE customer_id IS NOT NULL AND customer_id != ''
 ORDER BY order_purchase_timestamp DESC, id
