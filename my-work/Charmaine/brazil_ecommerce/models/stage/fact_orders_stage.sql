@@ -18,6 +18,7 @@ source_b AS (
     SELECT 
         TRIM(CAST(order_id AS STRING)) AS order_id,
         CAST(order_item_id AS INT64) AS order_item_id,
+        TRIM(CAST(product_id AS STRING)) AS product_id,
         TRIM(CAST(seller_id AS STRING)) AS seller_id,
         shipping_limit_date,
         CAST(price AS FLOAT64) AS price,
@@ -25,7 +26,8 @@ source_b AS (
     FROM {{ source('brazil_ecommerce', 'olist_order_items_dataset') }}
     WHERE order_id IS NOT NULL           
         AND order_item_id IS NOT NULL    
-        AND seller_id IS NOT NULL        
+        AND seller_id IS NOT NULL
+        AND product_id IS NOT NULL
 ),
 
 source_c AS (
@@ -57,6 +59,7 @@ joined_table AS (
         
         -- From source_b
         b.order_item_id,
+        b.product_id,
         b.seller_id,
         TIMESTAMP(CAST(b.shipping_limit_date AS STRING), 'UTC') AS shipping_limit_date,
         b.price,
@@ -92,6 +95,7 @@ validated_data AS (
         
         -- PK/FK columns - already NOT NULL
         order_item_id,
+        product_id,
         seller_id,
         
         shipping_limit_date,
@@ -182,6 +186,7 @@ SELECT
     order_delivered_customer_date,
     order_estimated_delivery_date,
     order_item_id,
+    product_id,
     seller_id,
     shipping_limit_date,
     price,

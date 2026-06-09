@@ -1,9 +1,9 @@
 SELECT
-    customer_id AS id,
+    LOWER(TRIM(CAST(customer_id AS STRING))) AS id,
     --customer_unique_id,
-    customer_zip_code_prefix,
-    customer_city,
-    customer_state
+    CAST(customer_zip_code_prefix AS INT64) AS customer_zip_code_prefix,
+    LOWER(TRIM(CAST(customer_city AS STRING))) AS customer_city,
+    LOWER(TRIM(CAST(customer_state AS STRING))) AS customer_state
 FROM {{ source('brazil_ecommerce', 'olist_customers_dataset') }}
 WHERE customer_id IS NOT NULL
-QUALIFY ROW_NUMBER() OVER (PARTITION BY id ORDER BY id DESC) = 1
+QUALIFY ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY customer_id DESC) = 1
