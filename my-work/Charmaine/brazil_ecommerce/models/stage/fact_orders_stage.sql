@@ -12,6 +12,7 @@ WITH source_a AS (
     FROM {{ source('brazil_ecommerce', 'olist_orders_dataset') }}
     WHERE order_id IS NOT NULL           -- PK: Required for joins
         AND customer_id IS NOT NULL      -- FK: Required for customer analysis
+        AND TRIM(CAST(customer_id AS STRING)) != ''
 ),
 
 source_b AS (
@@ -39,6 +40,14 @@ source_c AS (
         CAST(payment_value AS FLOAT64) AS payment_value
     FROM {{ source('brazil_ecommerce', 'olist_order_payments_dataset') }}
     WHERE order_id IS NOT NULL
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY order_id 
+        ORDER BY payment_sequential DESC  -- keep the last payment attempt
+    ) = 1  
+    -- ← deduplicate here before the join, as the fanout from payments can cause 
+    -- issues in the join and downstream logic. 
+    -- This ensures we only keep one payment record per order, which is crucial for accurate 
+    -- analysis and prevents data explosion in the join.
 ),
 
 joined_table AS (
@@ -51,17 +60,17 @@ joined_table AS (
         LOWER(COALESCE(orders.order_status, 'unavailable')) AS order_status,
         
         -- Timestamps with explicit UTC conversion
-        TIMESTAMP(CAST(orders.order_purchase_timestamp AS STRING), 'UTC') AS order_purchase_timestamp,
-        TIMESTAMP(CAST(orders.order_approved_at AS STRING), 'UTC') AS order_approved_at,
-        TIMESTAMP(CAST(orders.order_delivered_carrier_date AS STRING), 'UTC') AS order_delivered_carrier_date,
-        TIMESTAMP(CAST(orders.order_delivered_customer_date AS STRING), 'UTC') AS order_delivered_customer_date,
-        TIMESTAMP(CAST(orders.order_estimated_delivery_date AS STRING), 'UTC') AS order_estimated_delivery_date,
+        CAST(orders.order_purchase_timestamp AS TIMESTAMP)     AS order_purchase_timestamp,
+        CAST(orders.order_approved_at AS TIMESTAMP)            AS order_approved_at,
+        CAST(orders.order_delivered_carrier_date AS TIMESTAMP) AS order_delivered_carrier_date,
+        CAST(orders.order_delivered_customer_date AS TIMESTAMP) AS order_delivered_customer_date,
+        CAST(orders.order_estimated_delivery_date AS TIMESTAMP) AS order_estimated_delivery_date,
         
         -- From source_b
         b.order_item_id,
         b.product_id,
         b.seller_id,
-        TIMESTAMP(CAST(b.shipping_limit_date AS STRING), 'UTC') AS shipping_limit_date,
+        CAST(b.shipping_limit_date AS TIMESTAMP) AS shipping_limit_date,
         b.price,
         b.freight_value,
         
@@ -71,53 +80,22 @@ joined_table AS (
         c.payment_installments,
         c.payment_value,
 
-        -- Add row number for deduplication
-        ROW_NUMBER() OVER (
-            PARTITION BY orders.order_id, COALESCE(b.order_item_id, 0)
-            ORDER BY
-                orders.customer_id  -- tie breaker to ensure deterministic
-        ) AS row_num
+--        -- Add row number for deduplication
+--        ROW_NUMBER() OVER (
+--            PARTITION BY orders.order_id, COALESCE(b.order_item_id, 0)
+--            ORDER BY
+--                orders.customer_id  -- tie breaker to ensure deterministic
+--        ) AS row_num
         
     FROM source_a orders
     LEFT JOIN source_b b ON orders.order_id = b.order_id
     LEFT JOIN source_c c ON orders.order_id = c.order_id
     -- Deduplicate: Keep one row per order-item, with the first payment method
-    -- FIX: Handle deduplication safely - only for rows that have order_item_id
- --   QUALIFY ROW_NUMBER() OVER (
- --   PARTITION BY orders.order_id, COALESCE(b.order_item_id, 0)
- --   ORDER BY 
---        CASE WHEN c.payment_sequential IS NULL THEN 999 ELSE c.payment_sequential END,
- --       orders.customer_id
- --) = 1
---    QUALIFY ROW_NUMBER() OVER (
---        PARTITION BY orders.order_id, b.order_item_id 
---        ORDER BY c.payment_sequential
---    ) = 1
-),
-
--- Filter to row_num = 1 (keeps customer_id from original row)
-deduped AS (
-    SELECT 
-        id,
-        customer_id,  -- This will always have the value from source_a
-        order_status,
-        order_purchase_timestamp,
-        order_approved_at,
-        order_delivered_carrier_date,
-        order_delivered_customer_date,
-        order_estimated_delivery_date,
-        order_item_id,
-        product_id,
-        seller_id,
-        shipping_limit_date,
-        price,
-        freight_value,
-        payment_sequential,
-        payment_type,
-        payment_installments,
-        payment_value
-    FROM joined_table
-    WHERE row_num = 1
+    QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY orders.order_id, COALESCE(b.order_item_id, 0)
+    ORDER BY 
+        orders.customer_id
+ ) = 1
 ),
 
 -- Validate numeric ranges (no need to handle NULLs for status/type anymore)
@@ -156,7 +134,7 @@ validated_data AS (
         payment_installments,
         payment_value
         
-    FROM deduped    --joined_table
+    FROM joined_table
 ),
 
 -- Add data quality flags
@@ -249,5 +227,5 @@ SELECT
     has_missing_payment_info,
     has_no_items
 FROM quality_checks
-WHERE customer_id IS NOT NULL  -- Final safety filter
+WHERE customer_id IS NOT NULL AND customer_id != ''
 ORDER BY order_purchase_timestamp DESC, id
