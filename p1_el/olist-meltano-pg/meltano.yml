@@ -41,8 +41,8 @@ plugins:
         oltp-olist_geolocation:
           replication-method: INCREMENTAL
           replication-key: updated_at
-          key-properties:
-            - geolocation_zip_code_prefix
+          #key-properties: # (olist_geolocation data has no natural primary key)
+            #- geolocation_zip_code_prefix
 
         oltp-olist_orders:
           replication-method: INCREMENTAL
