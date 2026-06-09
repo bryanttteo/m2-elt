@@ -12,12 +12,14 @@ on:
   push:
     branches: [main]
     paths:
+      # The two data/transform subprojects baked into the Dagster prod image.
       - 'p1_el/**'
       - 'p3_dbt_project/**'
-      # also rebuild when the image / orchestration code or build config changes:
-      - 'p6_orchestration/olist_orchestration/**'
+      # plus this workflow's own build infra (so changes here are validated on deploy):
       - 'cloudbuild.yaml'
       - '.github/workflows/deploy-prod.yml'
+      # NOTE: p6_orchestration is intentionally NOT here. It will get its own workflow
+      # targeting a separate VM / Cloud Run (see deploy-orchestrator.yml, future).
   workflow_dispatch: {}   # allow manual runs from the Actions tab
 
 env:
