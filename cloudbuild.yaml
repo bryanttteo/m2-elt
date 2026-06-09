@@ -4,19 +4,35 @@
 # datasets/ — but the Dockerfile lives in a subfolder, so we pass it with -f.
 # `gcloud builds submit --tag` can't do that (it assumes ./Dockerfile), hence this file.
 #
+# Substitutions (Cloud Build does NOT support bash expansion, so the caller passes each
+# full image ref explicitly):
+#   _IMAGE     — the :latest tag (what run-dagster.sh pulls).
+#   _IMAGE_SHA — the same repo tagged with the git short SHA (immutable, per-commit).
+#   _VERSION   — git short SHA (or "manual"); stamped into the image as APP_VERSION /
+#                OCI revision label so a running container traces back to an exact commit.
+#
 # Run from the repo root:
-#   gcloud builds submit --config cloudbuild.yaml --substitutions=_IMAGE="$IMAGE" .
+#   SHA=$(git rev-parse --short HEAD)
+#   gcloud builds submit --config cloudbuild.yaml \
+#     --substitutions=_IMAGE="$IMAGE",_IMAGE_SHA="${IMAGE%:latest}:$SHA",_VERSION="$SHA" .
+substitutions:
+  _VERSION: manual
 steps:
   - name: gcr.io/cloud-builders/docker
     args:
       - build
       - -f
       - p6_orchestration/olist_orchestration/Dockerfile
+      - --build-arg
+      - APP_VERSION=${_VERSION}
       - -t
       - ${_IMAGE}
+      - -t
+      - ${_IMAGE_SHA}
       - .
 images:
   - ${_IMAGE}
+  - ${_IMAGE_SHA}
 options:
   # Send logs to Cloud Logging only — avoids needing a logs-bucket permission.
   logging: CLOUD_LOGGING_ONLY

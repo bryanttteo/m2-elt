@@ -128,27 +128,65 @@ BQ_GOLD_DATASET=olist_gold_mart_prod
 DBT_TARGET=prod
 MELTANO_ENVIRONMENT=prod
 OLIST_DATA_DIR=./datasets
-BRONZE_LOAD_METHOD=manual
+BRONZE_LOAD_METHOD=meltano_postgres
 OLIST_ENV=prod
 GOOGLE_APPLICATION_CREDENTIALS=/secrets/sa.json
+# Cloud SQL PostgreSQL — direct connection to instance sctp-m2-olist (public IP, no proxy).
+# Required by the tap-postgres → BigQuery bronze job (p1_el/olist-meltano-pg).
+POSTGRES_HOST=34.121.52.84
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=SCTP-Team2-olist
+POSTGRES_DB=olist
+POSTGRES_SCHEMA=oltp
 ```
+
+> The Postgres tap authenticates with username/password over the instance's **public IP**
+> (`ssl: true`), **not** the Cloud SQL Auth Proxy or IAM auth — so the service account needs
+> **no** `roles/cloudsql.*` binding. The only network requirement is that the VM's external IP
+> is in the instance's **authorized networks** (the nightly-recreated VM gets a new IP each
+> morning — see §11 — so confirm `0.0.0.0/0` is allowed or re-authorize daily).
+
+#### Switching the bronze load method
+
+`BRONZE_LOAD_METHOD` chooses how bronze is populated. Prod defaults to **`meltano_postgres`**
+(the live Cloud SQL OLTP source). To switch, edit the value in `~/.env.prod` **on the VM** and
+recreate the container — no image rebuild needed (it's runtime config):
+
+| Value | Source | Meltano project |
+|---|---|---|
+| `meltano_postgres` *(default)* | Cloud SQL `oltp.*` | `p1_el/olist-meltano-pg` (tap-postgres) |
+| `meltano_csv` (alias `meltano`) | baked-in `datasets/*.csv` | `p1_el/meltano-raw-csv` (tap-csv) |
+| `manual` | baked-in `datasets/*.csv` | — (code path in `assets.py`) |
+
+```bash
+# 🖥️ on the VM
+sed -i 's/^BRONZE_LOAD_METHOD=.*/BRONZE_LOAD_METHOD=manual/' ~/.env.prod   # e.g. fall back to CSV
+bash run-dagster.sh                                                        # recreate with new env
+```
+
+> `meltano_postgres` requires the `POSTGRES_*` block above **and** the VM IP authorized on the
+> Cloud SQL instance. If Postgres is unreachable, switch to `manual`/`meltano_csv` to load the
+> CSVs bundled in the image. All three land in the same `olist_*_raw` bronze tables.
+> The Meltano `prod` environment is declared in `p1_el/olist-meltano-pg/meltano.yml` (the
+> orchestration runs `meltano --environment=prod run tap-postgres target-bigquery`).
 
 ### `.env.key` (service-account keyfile)
 
 Check if the keyfile already exists locally:
 ```bash
-ls "$REPO_ROOT/secrets/sctp-team2-project2-elt-1853e88c8665.json"
+ls "$REPO_ROOT/secrets/sctp-team2-project2-elt-ROTATED-dbcb3cd092f4.json"
 ```
 
 If it's **missing**, download it from the team Google Drive:
 > **[Google Drive → SCTP Team2 → keys](https://drive.google.com/drive/u/1/folders/16cAsp_Pcq10lgHRpRnOQkW1scUHejuGe)**
 >
-> Download `sctp-team2-project2-elt-1853e88c8665.json` and place it in `secrets/`.
+> Download `sctp-team2-project2-elt-ROTATED-dbcb3cd092f4.json` and place it in `secrets/`.
 
 Then copy it to `.env.key` (the name the container expects):
 ```bash
 cd "$REPO_ROOT"
-cp secrets/sctp-team2-project2-elt-1853e88c8665.json .env.key
+cp secrets/sctp-team2-project2-elt-ROTATED-dbcb3cd092f4.json .env.key
 ```
 
 > Both `.env.prod` and `.env.key` match `**/.env.*` in `.gitignore` — neither is committed. They live on the VM only.

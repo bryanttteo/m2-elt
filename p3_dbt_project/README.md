@@ -1,5 +1,5 @@
 # dbt Project — ELT / Transformation  (Module 3)
-**Owner:** Hoong Jun · **Support:** Bryan Teo · **Role:** Analytics Engineering
+**Owner:** Hoong Jun · **Developer:** Charmaine Wong SM · **Support:** Bryan Teo · **Role:** Analytics Engineering
 
 ## Purpose
 Transform bronze (`raw_commerce`) into the **silver** and **gold** medallion layers, implementing M2's star-schema design as governed, tested, versioned dbt models. Gold marts are materialized as **BigQuery Iceberg** tables (the lakehouse differentiator).

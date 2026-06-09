@@ -36,7 +36,7 @@ REPO=olist-elt
 IMAGE=$REGION-docker.pkg.dev/$PROJECT/$REPO/olist-elt:latest
 
 # 1) Store the SA key in Secret Manager (one-time)
-gcloud secrets create olist-sa-key --data-file=secrets/sctp-team2-project2-elt-1853e88c8665.json
+gcloud secrets create olist-sa-key --data-file=secrets/sctp-team2-project2-elt-ROTATED-dbcb3cd092f4.json
 
 # 2) Build & push (build context = repo root)
 gcloud artifacts repositories create $REPO --repository-format=docker --location=$REGION

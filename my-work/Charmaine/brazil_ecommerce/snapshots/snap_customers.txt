@@ -1,0 +1,14 @@
+-- not useful. the dataset has no customer updates, so the snapshot will never update. 
+-- snapshots/snap_customers.sql
+
+{% snapshot snap_customers %}
+{{
+    config(
+        target_schema='snapshots',
+        unique_key='id',
+        strategy='check',
+        check_cols=['customer_zip_code_prefix', 'customer_city', 'customer_state'],
+    )
+}}
+SELECT * FROM {{ ref('dim_customers') }}
+{% endsnapshot %}

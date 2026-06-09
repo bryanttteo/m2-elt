@@ -1,0 +1,68 @@
+name: Build & deploy Dagster to prod
+
+# Triggers on pushes to main that touch the EL (Meltano) or dbt project. Builds the
+# Olist ELT image via Cloud Build, pushes :latest to Artifact Registry, then — only if
+# the prod VM is running — SSHes in and runs run-dagster.sh to pull + recreate the
+# Dagster container. The VM is deleted nightly (see notes/setup.prod.md §11); when it's
+# down the deploy step is skipped and the morning recreate pulls :latest itself.
+# Users materialize bronze/stage/gold from the Dagster UI — this workflow does not run
+# the pipeline.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'p1_el/**'
+      - 'p3_dbt_project/**'
+      # also rebuild when the image / orchestration code or build config changes:
+      - 'p6_orchestration/olist_orchestration/**'
+      - 'cloudbuild.yaml'
+      - '.github/workflows/deploy-prod.yml'
+  workflow_dispatch: {}   # allow manual runs from the Actions tab
+
+env:
+  PROJECT: sctp-team2-project2-elt
+  REGION: us-central1
+  ZONE: us-central1-a
+  REPO: olist-elt
+  VM: olist-dagster
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build & push image (Cloud Build)
+        run: |
+          SHA=$(git rev-parse --short HEAD)
+          BASE=$REGION-docker.pkg.dev/$PROJECT/$REPO/olist-elt
+          echo "Building version $SHA"
+          echo "APP_VERSION=$SHA" >> "$GITHUB_ENV"
+          gcloud builds submit --config cloudbuild.yaml \
+            --substitutions=_IMAGE="$BASE:latest",_IMAGE_SHA="$BASE:$SHA",_VERSION="$SHA" \
+            --project "$PROJECT" .
+
+      - name: Redeploy on VM if it is running
+        run: |
+          STATUS=$(gcloud compute instances describe "$VM" --zone "$ZONE" \
+            --project "$PROJECT" --format='value(status)' 2>/dev/null || echo ABSENT)
+          echo "VM status: $STATUS"
+          if [ "$STATUS" = "RUNNING" ]; then
+            gcloud compute ssh "$VM" --zone "$ZONE" --project "$PROJECT" \
+              --tunnel-through-iap \
+              --command="bash run-dagster.sh && echo 'Deployed APP_VERSION:' && docker exec olist-dagster printenv APP_VERSION && docker ps"
+          else
+            echo "VM not running ($STATUS) — skipping redeploy. Morning recreate pulls :latest."
+          fi
+
+      - name: Summary
+        if: always()
+        run: echo "### Deployed version \`${APP_VERSION:-unknown}\`" >> "$GITHUB_STEP_SUMMARY"

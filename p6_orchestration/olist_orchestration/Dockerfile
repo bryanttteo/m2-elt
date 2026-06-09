@@ -1,7 +1,7 @@
 # Olist ELT orchestration image (Dagster + dbt-bigquery + Meltano).
 #
 # Build from the REPO ROOT (the build context must include p3_dbt_project,
-# p1_el/meltano-raw-csv and datasets/):
+# p1_el/olist-meltano-pg and datasets/):
 #
 #   docker build -f p6_orchestration/olist_orchestration/Dockerfile -t olist-elt:latest .
 #
@@ -14,10 +14,17 @@
 #
 FROM python:3.11-slim
 
+# Version stamp — passed by the build (git short SHA, see cloudbuild.yaml). Surfaced as
+# the APP_VERSION env var (visible in the Dagster process / `docker exec ... env`) and an
+# OCI revision label (`docker inspect`), so a running container traces to an exact commit.
+ARG APP_VERSION=dev
+LABEL org.opencontainers.image.revision=$APP_VERSION
+
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     DAGSTER_HOME=/opt/dagster/home \
-    OLIST_ENV=prod
+    OLIST_ENV=prod \
+    APP_VERSION=$APP_VERSION
 
 # git is needed: Meltano installs tap-csv / target-bigquery from git pip_urls.
 RUN apt-get update \
@@ -30,7 +37,7 @@ WORKDIR /app
 # Copy the pieces the pipeline touches (paths relative to the repo-root context).
 COPY p6_orchestration/olist_orchestration/ /app/p6_orchestration/olist_orchestration/
 COPY p3_dbt_project/                        /app/p3_dbt_project/
-COPY p1_el/meltano-raw-csv/                  /app/p1_el/meltano-raw-csv/
+COPY p1_el/olist-meltano-pg/                 /app/p1_el/olist-meltano-pg/
 COPY datasets/                               /app/datasets/
 # NOTE: .env.prod is intentionally NOT baked in (it is git-ignored, which would break
 # clean CI builds). Prod config is injected at runtime by run-dagster.sh via
@@ -42,6 +49,10 @@ RUN pip install -e /app/p6_orchestration/olist_orchestration \
 
 # Pre-fetch dbt packages so the image is self-contained.
 RUN cd /app/p3_dbt_project/brazil_ecommerce && dbt deps || true
+
+# Pre-install Meltano plugins for the postgres bronze load path so `meltano run` works
+# at runtime without a network install step (tap-postgres, target-bigquery).
+RUN cd /app/p1_el/olist-meltano-pg && meltano install || true
 
 WORKDIR /app/p6_orchestration/olist_orchestration
 
