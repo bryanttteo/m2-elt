@@ -15,6 +15,7 @@ models:
           - relationships:
               to: ref('dim_reviews')
               field: order_id
+              severity: warn   # not every order gets a review
           - dbt_expectations.expect_column_values_to_be_of_type:
               column_type: STRING
       
@@ -25,6 +26,7 @@ models:
           - relationships:
               to: ref('dim_customers')
               field: id
+#              severity: warn  # ← source data has orphaned customer_id
           - dbt_expectations.expect_column_values_to_be_of_type:
               column_type: STRING
       
@@ -69,35 +71,35 @@ models:
       - name: order_item_id
         description: "One of composite primary keys for this table"
         tests:
-#          - not_null
+#          - not_null # This should be nullable because some orders have no items (e.g. canceled orders)
           - dbt_expectations.expect_column_values_to_be_of_type:
               column_type: INT64
 
       - name: product_id
         description: "The foreign key to dim_products"
         tests:
-#          - not_null
+#          - not_null # This should be nullable because some orders have no items (e.g. canceled orders)
 #          - dbt_expectations.expect_column_values_to_not_be_null:
 #              row_condition: "order_item_id IS NOT NULL"
 #              severity: warn
           - relationships:
               to: ref('dim_products')
               field: id
-              severity: warn
+#              severity: warn
           - dbt_expectations.expect_column_values_to_be_of_type:
               column_type: STRING
       
       - name: seller_id
         description: "The foreign key to dim_sellers"
         tests:
-#          - not_null
+#          - not_null # This should be nullable because some orders have no items (e.g. canceled orders)
 #          - dbt_expectations.expect_column_values_to_not_be_null:
 #            row_condition: "order_item_id IS NOT NULL"  # Only test when order has items
 #            severity: warn
           - relationships:
               to: ref('dim_sellers')
               field: id
-              severity: warn  # Change from error to warn 
+#              severity: warn  # Change from error to warn 
           - dbt_expectations.expect_column_values_to_be_of_type:
               column_type: STRING
 
