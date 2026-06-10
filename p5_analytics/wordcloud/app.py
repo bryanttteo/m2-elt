@@ -2,7 +2,9 @@
 
 Word cloud and NLP-light analysis over the free-text fields of ``dim_reviews``
 (``review_comment_title`` and ``review_comment_message``) in the Olist gold mart.
-Reviews are Brazilian Portuguese; see text.py for the stopword handling.
+Reviews are Brazilian Portuguese; a sidebar Language toggle translates the displayed
+terms to English (Cloud Translation API) for non-Portuguese readers. See text.py for
+stopword handling and translate.py for the translation layer.
 
 Run locally:  ENV=prod streamlit run app.py
 Serve (prod): streamlit run app.py --server.port $PORT --server.address 0.0.0.0
@@ -17,6 +19,7 @@ from wordcloud import WordCloud
 import bq
 import queries
 import text as T
+import translate as Tr
 
 st.set_page_config(page_title="Olist · Review Text Analysis", page_icon="💬",
                    layout="wide", initial_sidebar_state="expanded")
@@ -42,6 +45,15 @@ df = load_reviews()
 
 # ---------------------------------------------------------------- sidebar ----
 st.sidebar.header("Filters")
+
+lang = st.sidebar.radio(
+    "Language",
+    ["Português (original)", "English (translated)"],
+    index=0,
+    help="English translates the displayed terms via Cloud Translation — for readers "
+         "who don't read Portuguese. The underlying reviews are unchanged.",
+)
+ENGLISH = lang.startswith("English")
 
 field = st.sidebar.radio(
     "Text field",
@@ -71,6 +83,29 @@ def text_series(frame: pd.DataFrame) -> pd.Series:
     return s.dropna()
 
 
+# --------------------------------------------------- translation helpers ----
+def translate_freq(counter, top: int = 250) -> dict:
+    """Token-frequency dict, translated to English (aggregating collisions) when in
+    English mode. In Portuguese mode it's just the counter as a dict."""
+    items = counter.most_common(top) if hasattr(counter, "most_common") else list(counter)
+    if not ENGLISH:
+        return dict(items)
+    mapping = Tr.translate_terms(tuple(w for w, _ in items))
+    agg: dict[str, float] = {}
+    for w, c in items:
+        en = mapping.get(w, w)
+        agg[en] = agg.get(en, 0) + c
+    return agg
+
+
+def translate_labels(labels: list[str]) -> list[str]:
+    """Translate a list of phrase labels (e.g. bigrams) to English when in English mode."""
+    if not ENGLISH or not labels:
+        return labels
+    mapping = Tr.translate_terms(tuple(labels))
+    return [mapping.get(lbl, lbl) for lbl in labels]
+
+
 # Apply the score filter, then derive the working text series.
 fdf = df[df["review_score"].isin(sel_scores)] if sel_scores else df
 texts = text_series(fdf)
@@ -80,7 +115,8 @@ texts = text_series(fdf)
 st.title("💬 Olist Review Text Analysis")
 st.caption(
     "Free-text analysis of `dim_reviews` (current review versions) from the Olist gold "
-    "mart. Reviews are in Brazilian Portuguese."
+    "mart. Reviews are in Brazilian Portuguese"
+    + (" — terms below are machine-translated to English." if ENGLISH else ".")
 )
 
 n_reviews = len(fdf)
@@ -100,23 +136,21 @@ if texts.empty:
 
 
 # -------------------------------------------------------------- word cloud ----
-st.subheader("Word cloud")
+st.subheader("Word cloud" + ("  ·  English" if ENGLISH else ""))
 
 
 @st.cache_data(ttl=3600)
-def make_cloud(joined: str, max_words: int) -> "WordCloud":
-    return WordCloud(
+def cloud_image(freqs: dict, max_words: int, colormap: str = "viridis"):
+    wc = WordCloud(
         width=1200, height=500, background_color="white",
-        stopwords=T.STOP, max_words=max_words, collocations=True,
-        colormap="viridis",
-    ).generate(joined)
+        max_words=max_words, colormap=colormap,
+    ).generate_from_frequencies(freqs)
+    return wc.to_array()
 
 
-# WordCloud does its own tokenizing; we strip accents so variants collapse together.
-joined = " ".join(T._strip_accents(t.lower()) for t in texts)
-cloud = make_cloud(joined, max_words)
+freqs = translate_freq(T.freq(texts), top=max(max_words, 250))
 fig, ax = plt.subplots(figsize=(14, 6))
-ax.imshow(cloud, interpolation="bilinear")
+ax.imshow(cloud_image(freqs, max_words), interpolation="bilinear")
 ax.axis("off")
 st.pyplot(fig, use_container_width=True)
 
@@ -126,7 +160,7 @@ st.subheader("Most frequent terms")
 col_w, col_b = st.columns(2)
 
 
-def bar(items: list[tuple[str, int]], title: str):
+def bar(items: list[tuple[str, float]], title: str):
     if not items:
         st.info("Not enough text.")
         return
@@ -141,9 +175,12 @@ def bar(items: list[tuple[str, int]], title: str):
 
 
 with col_w:
-    bar(T.top_words(texts, 20), "Top 20 words")
+    word_items = sorted(freqs.items(), key=lambda kv: kv[1], reverse=True)[:20]
+    bar(word_items, "Top 20 words")
 with col_b:
-    bar(T.top_bigrams(texts, 20), "Top 20 bigrams")
+    bigrams = T.top_bigrams(texts, 20)
+    bg_labels = translate_labels([w for w, _ in bigrams])
+    bar(list(zip(bg_labels, [c for _, c in bigrams])), "Top 20 bigrams")
 
 
 # --------------------------------------------------- length vs. sentiment ----
@@ -187,11 +224,12 @@ def cloud_for(frame: pd.DataFrame, colormap: str):
     if s.empty:
         st.info("No text in this score band.")
         return
-    joined = " ".join(T._strip_accents(t.lower()) for t in s)
-    wc = WordCloud(width=900, height=450, background_color="white",
-                   stopwords=T.STOP, max_words=120, colormap=colormap).generate(joined)
+    freqs = translate_freq(T.freq(s), top=200)
+    if not freqs:
+        st.info("No text in this score band.")
+        return
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.imshow(wc, interpolation="bilinear")
+    ax.imshow(cloud_image(freqs, 120, colormap), interpolation="bilinear")
     ax.axis("off")
     st.pyplot(fig, use_container_width=True)
 

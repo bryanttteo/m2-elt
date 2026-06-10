@@ -39,6 +39,19 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v2
 
+      # dist/olist_bundle.zip is git-ignored (it embeds the SA key), so it isn't in the
+      # checkout. Regenerate it here: build_bundle.py reads GOOGLE_APPLICATION_CREDENTIALS
+      # (set by the auth step above) and inlines those creds into the BigQuery connection.
+      - name: Build Superset asset bundle
+        working-directory: p5_analytics/superset
+        env:
+          GCP_PROJECT: ${{ env.PROJECT }}
+          BQ_GOLD_DATASET: olist_gold_mart_prod
+        run: |
+          python3 -m pip install --quiet pyyaml
+          python3 bootstrap/build_bundle.py
+          ls -la dist/olist_bundle.zip
+
       - name: Build & push image (Dockerfile.cloudrun)
         working-directory: p5_analytics/superset
         run: |
