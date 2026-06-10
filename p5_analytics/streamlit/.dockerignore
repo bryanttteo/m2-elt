@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+notes/
+README.md
+Makefile
+.gitignore
+.gcloudignore
+# NOTE: data/*.parquet IS included on purpose (baked offline snapshot).

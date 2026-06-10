@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Olist ELT — Ops Portal</title>
+<style>
+  :root {
+    --bg: #0f172a; --card: #1e293b; --card2: #273449;
+    --text: #e2e8f0; --muted: #94a3b8; --border: #334155;
+    --green: #22c55e; --amber: #f59e0b; --red: #ef4444; --blue: #3b82f6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+  }
+  header {
+    padding: 28px 32px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+  }
+  header h1 { margin: 0; font-size: 22px; }
+  header .sub { color: var(--muted); font-size: 14px; }
+  header .meta { margin-left: auto; color: var(--muted); font-size: 13px; }
+  main { padding: 24px 32px; max-width: 1200px; margin: 0 auto; }
+  h2 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); margin: 32px 0 12px;
+  }
+  .grid {
+    display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 18px; transition: border-color .15s;
+  }
+  .card:hover { border-color: var(--blue); }
+  .card .top { display: flex; align-items: center; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto;
+         background: var(--muted); box-shadow: 0 0 0 3px rgba(148,163,184,.15); }
+  .dot.up, .dot.green { background: var(--green); box-shadow: 0 0 0 3px rgba(34,197,94,.18); }
+  .dot.down, .dot.red { background: var(--red); box-shadow: 0 0 0 3px rgba(239,68,68,.18); }
+  .dot.warn, .dot.yellow { background: var(--amber); box-shadow: 0 0 0 3px rgba(245,158,11,.18); }
+  .dot.gray { background: var(--muted); box-shadow: 0 0 0 3px rgba(148,163,184,.15); }
+  .dot.blue { background: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,.18); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+  .dot.yellow { animation: pulse 1.1s ease-in-out infinite; }
+  .status-label { font-size: 11px; color: var(--muted); margin-left: 6px; white-space: nowrap; }
+  .card h3 { margin: 0; font-size: 16px; flex: 1; }
+  .card .tag {
+    font-size: 11px; color: var(--muted); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 8px; white-space: nowrap;
+  }
+  .card .desc { color: var(--muted); font-size: 13px; margin: 10px 0 12px; }
+  .card .links { display: flex; flex-wrap: wrap; gap: 8px; }
+  .card a.btn {
+    text-decoration: none; font-size: 13px; color: var(--text);
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 11px; transition: background .15s;
+  }
+  .card a.btn:hover { background: var(--blue); border-color: var(--blue); }
+  .card a.btn.primary { background: var(--blue); border-color: var(--blue); }
+  .card code { color: var(--muted); font-size: 12px; }
+  .note {
+    background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.3);
+    color: #fde68a; font-size: 12px; border-radius: 8px;
+    padding: 8px 11px; margin-top: 10px;
+  }
+  footer { color: var(--muted); font-size: 12px; padding: 24px 32px 40px;
+           border-top: 1px solid var(--border); margin-top: 32px; }
+  footer code { color: #cbd5e1; }
+  a { color: var(--blue); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🛰️ Olist ELT — Ops Portal</h1>
+  <span class="sub">Team 2 · project <code style="color:#cbd5e1">sctp-team2-project2-elt</code> · us-central1</span>
+  <span class="meta" id="clock"></span>
+</header>
+
+<main>
+  <!-- ============ OBSERVABILITY ============ -->
+  <h2>📊 Observability</h2>
+  <div class="grid">
+    <div class="card">
+      <div class="top"><span class="dot blue"></span><h3>Grafana</h3><span class="tag">dashboards</span></div>
+      <div class="desc">Manager "Platform Health" + engineering "Deep Dive".</div>
+      <div class="links">
+        <a class="btn primary" href="https://olist-grafana-513410438758.us-central1.run.app" target="_blank" rel="noopener">Open Grafana ↗</a>
+        <a class="btn" href="https://olist-grafana-513410438758.us-central1.run.app/d/olist-platform-health" target="_blank" rel="noopener">Manager view ↗</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="top"><span class="dot blue"></span><h3>Cloud Monitoring</h3><span class="tag">GCP</span></div>
+      <div class="desc">Uptime checks, alert policies, Cloud Run / Cloud SQL / BigQuery metrics.</div>
+      <div class="links">
+        <a class="btn primary" href="https://console.cloud.google.com/monitoring?project=sctp-team2-project2-elt" target="_blank" rel="noopener">Dashboards ↗</a>
+        <a class="btn" href="https://console.cloud.google.com/monitoring/uptime?project=sctp-team2-project2-elt" target="_blank" rel="noopener">Uptime ↗</a>
+        <a class="btn" href="https://console.cloud.google.com/monitoring/alerting?project=sctp-team2-project2-elt" target="_blank" rel="noopener">Alerts ↗</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="top"><span class="dot blue"></span><h3>Cloud Logging</h3><span class="tag">GCP</span></div>
+      <div class="desc">All Cloud Run + Dagster VM logs, log-based error metrics.</div>
+      <div class="links">
+        <a class="btn primary" href="https://console.cloud.google.com/logs/query?project=sctp-team2-project2-elt" target="_blank" rel="noopener">Logs Explorer ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ANALYTICS APPS ============ -->
+  <h2>📈 Analytics Apps (Cloud Run)</h2>
+  <div class="grid">
+    <div class="card">
+      <div class="top"><span class="dot gray" data-id="dash"></span><h3>Dash</h3><span class="status-label" data-label="dash"></span><span class="tag">olist-dash · :8080</span></div>
+      <div class="desc">Plotly Dash / Flask — live BigQuery dashboard.</div>
+      <div class="links">
+        <a class="btn primary" href="https://olist-dash-cfzbsxpkgq-uc.a.run.app" target="_blank" rel="noopener">Open app ↗</a>
+        <a class="btn" href="https://console.cloud.google.com/run/detail/us-central1/olist-dash/metrics?project=sctp-team2-project2-elt" target="_blank" rel="noopener">Metrics ↗</a>
+        <a class="btn" href="https://console.cloud.google.com/run/detail/us-central1/olist-dash/logs?project=sctp-team2-project2-elt" target="_blank" rel="noopener">Logs ↗</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="top"><span class="dot gray" data-id="streamlit"></span><h3>Streamlit</h3><span class="status-label" data-label="streamlit"></span><span class="tag">olist-streamlit · :8080</span></div>
+      <div class="desc">Streamlit — offline parquet snapshot by default.</div>
+      <div class="links">
+        <a class="btn primary" href="https://olist-streamlit-cfzbsxpkgq-uc.a.run.app" target="_blank" rel="noopener">Open app ↗</a>
+        <a class="btn" href="https://console.cloud.google.com/run/detail/us-central1/olist-streamlit/metrics?project=sctp-team2-project2-elt" target="_blank" rel="noopener">Metrics ↗</a>
+        <a class="btn" href="https://console.cloud.google.com/run/detail/us-central1/olist-streamlit/logs?project=sctp-team2-project2-elt" target="_blank" rel="noopener">Logs ↗</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="top"><span class="dot gray" data-id="wordcloud"></span><h3>Wordcloud</h3><span class="status-label" data-label="wordcloud"></span><span class="tag">olist-wordcloud · :8080</span></div>
+      <div class="desc">Streamlit — review text analysis (live BigQuery dim_reviews).</div>
+      <div class="links">
+        <a class="btn primary" href="https://olist-wordcloud-513410438758.us-central1.run.app" target="_blank" rel="noopener">Open app ↗</a>
+        <a class="btn" href="https://console.cloud.google.com/run/detail/us-central1/olist-wordcloud/metrics?project=sctp-team2-project2-elt" target="_blank" rel="noopener">Metrics ↗</a>
+        <a class="btn" href="https://console.cloud.google.com/run/detail/us-central1/olist-wordcloud/logs?project=sctp-team2-project2-elt" target="_blank" rel="noopener">Logs ↗</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="top"><span class="dot gray" data-id="superset"></span><h3>Superset</h3><span class="status-label" data-label="superset"></span><span class="tag">olist-superset · :8080</span></div>
+      <div class="desc">Apache Superset 4.1.1 — BI on gold mart (min 1 instance).</div>
+      <div class="links">
+        <a class="btn primary" href="https://olist-superset-cfzbsxpkgq-uc.a.run.app" target="_blank" rel="noopener">Open app ↗</a>
+        <a class="btn" href="https://console.cloud.google.com/run/detail/us-central1/olist-superset/metrics?project=sctp-team2-project2-elt" target="_blank" rel="noopener">Metrics ↗</a>
+        <a class="btn" href="https://console.cloud.google.com/run/detail/us-central1/olist-superset/logs?project=sctp-team2-project2-elt" target="_blank" rel="noopener">Logs ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ORCHESTRATION ============ -->
+  <h2>⚙️ Orchestration</h2>
+  <div class="grid">
+    <div class="card">
+      <div class="top"><span class="dot gray" data-id="dagster"></span><h3>Dagster UI</h3><span class="status-label" data-label="dagster"></span><span class="tag">VM olist-dagster · :3000</span></div>
+      <div class="desc">Pipeline runs, schedules (<code>olist_nightly</code> 02:00 SGT). Basic auth <code>team2</code>.</div>
+      <div class="links">
+        <a class="btn primary" href="http://34.27.145.163:3000" target="_blank" rel="noopener">Open Dagster ↗</a>
+        <a class="btn" href="https://console.cloud.google.com/compute/instances?project=sctp-team2-project2-elt" target="_blank" rel="noopener">VM console ↗</a>
+      </div>
+      <div class="note">⏱ VM is deleted nightly and recreated ~06:00 — expect "down" overnight. New IP must be re-added to Cloud SQL authorized networks + nginx auth re-applied (runbook <code>notes/setup.prod.md §11</code>).</div>
+    </div>
+    <div class="card">
+      <div class="top"><span class="dot warn"></span><h3>dbt Docs</h3><span class="tag">same VM · :3000/dbt-docs/</span></div>
+      <div class="desc">dbt model lineage &amp; documentation site (served by nginx on the Dagster VM).</div>
+      <div class="links">
+        <a class="btn primary" href="http://34.27.145.163:3000/dbt-docs/" target="_blank" rel="noopener">Open dbt docs ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DATA STORES ============ -->
+  <h2>🗄️ Data Stores</h2>
+  <div class="grid">
+    <div class="card">
+      <div class="top"><span class="dot gray" data-id="postgres"></span><h3>Cloud SQL — Postgres</h3><span class="status-label" data-label="postgres"></span><span class="tag">sctp-m2-olist · :5432</span></div>
+      <div class="desc">OLTP source (olist) + Superset metadata DB. <code>34.121.52.84</code></div>
+      <div class="links">
+        <a class="btn primary" href="https://console.cloud.google.com/sql/instances/sctp-m2-olist/overview?project=sctp-team2-project2-elt" target="_blank" rel="noopener">Instance ↗</a>
+        <a class="btn" href="https://console.cloud.google.com/sql/instances/sctp-m2-olist/system-insights?project=sctp-team2-project2-elt" target="_blank" rel="noopener">Insights ↗</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="top"><span class="dot blue"></span><h3>BigQuery</h3><span class="tag">US · warehouse</span></div>
+      <div class="desc">Datasets <code>olist_bronze / stage / gold_mart _prod</code>.</div>
+      <div class="links">
+        <a class="btn primary" href="https://console.cloud.google.com/bigquery?project=sctp-team2-project2-elt" target="_blank" rel="noopener">BigQuery ↗</a>
+        <a class="btn" href="https://console.cloud.google.com/bigquery/admin/monitoring?project=sctp-team2-project2-elt" target="_blank" rel="noopener">Monitoring ↗</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="top"><span class="dot blue"></span><h3>Artifact Registry</h3><span class="tag">olist-elt images</span></div>
+      <div class="desc">Container images for Dagster / Cloud Run builds.</div>
+      <div class="links">
+        <a class="btn primary" href="https://console.cloud.google.com/artifacts?project=sctp-team2-project2-elt" target="_blank" rel="noopener">Registry ↗</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Served by <code>app.py</code> (Flask) · status polled server-side from <code>/api/status</code> every 15s.
+  <span style="color:var(--green)">●</span> running ·
+  <span style="color:var(--red)">●</span> not pingable ·
+  <span style="color:var(--amber)">●</span> deployment in progress ·
+  <span style="color:var(--muted)">●</span> not configured.
+  App link URLs are still set via <code>REPLACE_*</code> in this file; health targets are set via env vars on the service.
+  See <code>observability-plan.md</code> for the full plan. <span id="auth-note"></span>
+</footer>
+
+<script>
+  // Clock
+  function tick() {
+    var d = new Date();
+    document.getElementById('clock').textContent =
+      d.toUTCString().replace('GMT','UTC') + '  ·  SGT ' +
+      d.toLocaleTimeString('en-SG', { timeZone: 'Asia/Singapore', hour12: false });
+  }
+  tick(); setInterval(tick, 1000);
+
+  // Server-side health: poll /api/status (no CORS — same origin).
+  var STATES = ['green', 'red', 'yellow', 'gray'];
+  function applyStatus(svc) {
+    var dot = document.querySelector('.dot[data-id="' + svc.id + '"]');
+    var label = document.querySelector('.status-label[data-label="' + svc.id + '"]');
+    if (dot) { STATES.forEach(function (s) { dot.classList.remove(s); });
+               dot.classList.add(svc.state); }
+    if (label) { label.textContent = svc.detail || svc.state; }
+  }
+  function poll() {
+    fetch('/api/status', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        (data.services || []).forEach(applyStatus);
+        var note = document.getElementById('auth-note');
+        if (note) {
+          note.textContent = data.auth === 'degraded'
+            ? '⚠ GCP API degraded (' + (data.auth_error || 'no creds') +
+              ') — deploy/VM detection off, ping only.'
+            : '';
+          note.style.color = '#fde68a';
+        }
+      })
+      .catch(function () {
+        document.querySelectorAll('.dot[data-id]').forEach(function (dot) {
+          STATES.forEach(function (s) { dot.classList.remove(s); });
+          dot.classList.add('gray');
+        });
+      });
+  }
+  poll(); setInterval(poll, 15000);
+</script>
+</body>
+</html>

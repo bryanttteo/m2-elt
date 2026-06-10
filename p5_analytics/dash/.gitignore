@@ -1,0 +1,8 @@
+# Local parquet cache / baked snapshot (regenerate with `make snapshot`)
+data/*.parquet
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

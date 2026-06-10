@@ -1,0 +1,33 @@
+name: Deploy Wordcloud (Cloud Run)
+
+# Dedicated trigger for p5_analytics/wordcloud only — fires when that subfolder
+# (or this workflow) changes on main. Builds + deploys to Cloud Run via the app's
+# own `make deploy` (service: olist-wordcloud). Independent of the other p5 apps.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'p5_analytics/wordcloud/**'
+      - '.github/workflows/deploy-wordcloud.yml'
+  workflow_dispatch: {}
+
+env:
+  PROJECT: sctp-team2-project2-elt
+  REGION: us-central1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build & deploy to Cloud Run
+        working-directory: p5_analytics/wordcloud
+        run: make deploy PROJECT="$PROJECT" REGION="$REGION"

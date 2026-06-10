@@ -1,0 +1,92 @@
+# ============================================================================
+# MLP pipeline configuration — change behaviour here, NOT in code.
+# Override any key at the CLI:  python -m src.pipeline --set model.name=random_forest
+# Override via env:            MLP_TARGET=repeat_purchase  (see src/config.py)
+# ============================================================================
+
+# --- Which learning task to run --------------------------------------------
+# late_delivery   : predict P(order arrives after the promised date)  [primary]
+# repeat_purchase : predict P(customer's first order leads to a 2nd+) [secondary]
+target: late_delivery
+
+# --- BigQuery ingestion (swappable source) ---------------------------------
+bigquery:
+  project: sctp-team2-project2-elt
+  gold_dataset: olist_gold_mart_prod
+  # keyfile is tried first; falls back to gcloud ADC if absent/invalid.
+  # path is relative to the mlp/ dir -> ../../secrets/... (override with GOOGLE_APPLICATION_CREDENTIALS)
+  keyfile: ../../../../../../secrets/sctp-team2-project2-elt-ROTATED-dbcb3cd092f4.json
+  # Set to a path to cache the pulled order-grain table as parquet (skips BQ on reruns).
+  cache_path: artifacts/orders.parquet
+  use_cache: true
+
+# --- Train/test split -------------------------------------------------------
+split:
+  test_size: 0.2
+  random_state: 42
+  stratify: true
+
+# --- Model selection (config switch, not a code change) --------------------
+# Options: logistic_regression | random_forest | hist_gbm | xgboost
+model:
+  name: hist_gbm
+  # Per-model fixed params (merged over library defaults).
+  params:
+    logistic_regression:
+      max_iter: 1000
+      class_weight: balanced
+    random_forest:
+      n_estimators: 300
+      class_weight: balanced
+      n_jobs: -1
+    hist_gbm:
+      learning_rate: 0.1
+      max_iter: 300
+    xgboost:
+      n_estimators: 400
+      learning_rate: 0.1
+      max_depth: 6
+
+# --- Hyperparameter search (set enabled: false for a fast single fit) ------
+search:
+  enabled: false
+  n_iter: 20
+  cv_folds: 3
+  scoring: average_precision   # PR-AUC — right for the imbalanced late class
+  # Search spaces per model (lists -> choices, [low, high] floats handled in model.py)
+  spaces:
+    hist_gbm:
+      model__learning_rate: [0.03, 0.05, 0.1, 0.2]
+      model__max_iter: [200, 300, 500]
+      model__max_leaf_nodes: [15, 31, 63]
+      model__l2_regularization: [0.0, 1.0, 10.0]
+    random_forest:
+      model__n_estimators: [200, 300, 500]
+      model__max_depth: [null, 10, 20, 30]
+      model__min_samples_leaf: [1, 2, 5]
+    logistic_regression:
+      model__C: [0.01, 0.1, 1.0, 10.0]
+    xgboost:
+      model__n_estimators: [200, 400, 600]
+      model__max_depth: [4, 6, 8]
+      model__learning_rate: [0.03, 0.1, 0.2]
+
+# --- Imbalance handling -----------------------------------------------------
+imbalance:
+  # auto -> class_weight=balanced (LR/RF) or scale_pos_weight (xgb/hist via sample_weight)
+  strategy: auto
+
+# --- Decision threshold -----------------------------------------------------
+# tune_for_recall=true picks the threshold giving at least `min_recall` on the
+# positive class, maximising precision subject to that (cost-asymmetric ops view).
+threshold:
+  tune_for_recall: true
+  min_recall: 0.70
+  default: 0.5
+
+# --- Output -----------------------------------------------------------------
+output:
+  dir: artifacts
+  model_file: model.pkl
+  metrics_file: metrics.json
+  plots: true

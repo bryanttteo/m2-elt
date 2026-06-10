@@ -1,0 +1,16 @@
+# Dark "data-story" theme to match the chart palette, plus production server settings.
+[theme]
+base = "dark"
+primaryColor = "#4f8cff"
+backgroundColor = "#0a0f1e"
+secondaryBackgroundColor = "#121a2e"
+textColor = "#e8edf7"
+font = "sans serif"
+
+[server]
+headless = true
+enableCORS = false
+enableXsrfProtection = false
+
+[browser]
+gatherUsageStats = false

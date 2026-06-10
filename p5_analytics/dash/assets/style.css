@@ -1,0 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+:root {
+  --canvas: #0a0f1e;
+  --surface: #121a2e;
+  --surface-2: #1a2540;
+  --grid: #243049;
+  --ink: #e8edf7;
+  --muted: #8b9bb4;
+  --accent: #4f8cff;
+}
+
+body {
+  background: radial-gradient(1200px 600px at 80% -10%, #16213f 0%, var(--canvas) 55%);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Raised, glassy cards for both KPIs and charts. */
+.kpi-card, .chart-card, .callout {
+  background: linear-gradient(180deg, #16203a 0%, #0f1729 100%);
+  border: 1px solid var(--grid);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+.callout {
+  background: linear-gradient(180deg, #18233f 0%, #111a2e 100%);
+}
+.kpi-card {
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+.kpi-card:hover {
+  transform: translateY(-3px);
+  border-color: #2f4068;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+}
+
+/* Make Plotly graphs fill their card and read large. */
+.chart-card .js-plotly-plot,
+.chart-card .plot-container {
+  width: 100% !important;
+}
+
+/* Dark DatePicker to match the Mantine dark inputs. */
+.DateInput,
+.DateInput_input,
+.DateRangePickerInput,
+.DateRangePickerInput__withBorder {
+  background: var(--surface-2) !important;
+  color: var(--ink) !important;
+  border: none;
+}
+.DateInput_input {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink) !important;
+  background: var(--surface-2) !important;
+}
+.DateRangePickerInput {
+  border-radius: 8px;
+  border: 1px solid var(--grid) !important;
+  overflow: hidden;
+}
+.DateRangePickerInput_arrow_svg { fill: var(--muted); }
+.CalendarDay__default { background: var(--surface); border-color: var(--grid); color: var(--ink); }
+.CalendarMonth_caption { color: var(--ink); }
+.DayPicker, .CalendarMonthGrid, .DayPicker_transitionContainer { background: var(--surface); }

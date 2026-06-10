@@ -1,0 +1,10 @@
+# Uploaded to Cloud Build = Docker build context. Keep data/ (baked offline snapshot);
+# drop the local venv, caches, git, and docs.
+.venv/
+venv/
+__pycache__/
+*/__pycache__/
+*.pyc
+.git/
+notes/
+README.md

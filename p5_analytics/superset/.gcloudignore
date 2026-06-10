@@ -1,0 +1,12 @@
+# Cloud Build upload filter. Note: presence of this file means .gitignore is NOT used,
+# so dist/olist_bundle.zip (needed by Dockerfile.cloudrun) IS uploaded.
+.git
+.venv
+**/__pycache__
+**/*.pyc
+.env.superset
+.env.superset.example
+# Raw SA key is not needed in the build — credentials are already embedded in the bundle.
+secrets/
+bootstrap/diag.py
+notes/

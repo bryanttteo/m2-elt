@@ -1,0 +1,193 @@
+{
+  "uid": "olist-platform-health",
+  "title": "Platform Health (Manager)",
+  "tags": ["olist", "manager"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 10,
+      "options": {
+        "mode": "markdown",
+        "content": "## 🛰️ Olist ELT — Platform Health\nLive service health for **Team 2** · project `sctp-team2-project2-elt` · us-central1. Green = healthy traffic & instances. For per-link status see the **Ops Portal**. Dagster is **down nightly by design** (recreated ~06:00)."
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Cloud Run — running instances",
+      "description": "Active container instances per analytics service. 0 for a sustained period = service is down.",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 3 },
+      "id": 1,
+      "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "green", "value": 1 }
+          ] },
+          "color": { "mode": "thresholds" },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "horizontal",
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+          "queryType": "timeSeriesList",
+          "timeSeriesList": {
+            "projectName": "sctp-team2-project2-elt",
+            "filters": ["metric.type", "=", "run.googleapis.com/container/instance_count"],
+            "perSeriesAligner": "ALIGN_MEAN",
+            "crossSeriesReducer": "REDUCE_SUM",
+            "groupBys": ["resource.label.service_name"],
+            "alignmentPeriod": "stackdriver-auto"
+          },
+          "aliasBy": "{{resource.label.service_name}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Request rate (req/s) per service",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 3 },
+      "id": 2,
+      "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+          "queryType": "timeSeriesList",
+          "timeSeriesList": {
+            "projectName": "sctp-team2-project2-elt",
+            "filters": ["metric.type", "=", "run.googleapis.com/request_count"],
+            "perSeriesAligner": "ALIGN_RATE",
+            "crossSeriesReducer": "REDUCE_SUM",
+            "groupBys": ["resource.label.service_name"],
+            "alignmentPeriod": "stackdriver-auto"
+          },
+          "aliasBy": "{{resource.label.service_name}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "5xx errors per service",
+      "description": "Server errors. Should sit at zero.",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 10 },
+      "id": 3,
+      "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "fillOpacity": 60 }, "color": { "mode": "fixed", "fixedColor": "red" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+          "queryType": "timeSeriesList",
+          "timeSeriesList": {
+            "projectName": "sctp-team2-project2-elt",
+            "filters": ["metric.type", "=", "run.googleapis.com/request_count", "AND", "metric.label.response_code_class", "=", "5xx"],
+            "perSeriesAligner": "ALIGN_RATE",
+            "crossSeriesReducer": "REDUCE_SUM",
+            "groupBys": ["resource.label.service_name"],
+            "alignmentPeriod": "stackdriver-auto"
+          },
+          "aliasBy": "{{resource.label.service_name}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "p95 request latency",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 10 },
+      "id": 4,
+      "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+          "queryType": "timeSeriesList",
+          "timeSeriesList": {
+            "projectName": "sctp-team2-project2-elt",
+            "filters": ["metric.type", "=", "run.googleapis.com/request_latencies"],
+            "perSeriesAligner": "ALIGN_PERCENTILE_95",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "groupBys": ["resource.label.service_name"],
+            "alignmentPeriod": "stackdriver-auto"
+          },
+          "aliasBy": "{{resource.label.service_name}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Cloud SQL — CPU utilization",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 17 },
+      "id": 5,
+      "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "max": 1, "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+          "queryType": "timeSeriesList",
+          "timeSeriesList": {
+            "projectName": "sctp-team2-project2-elt",
+            "filters": ["metric.type", "=", "cloudsql.googleapis.com/database/cpu/utilization"],
+            "perSeriesAligner": "ALIGN_MEAN",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "groupBys": ["resource.label.database_id"],
+            "alignmentPeriod": "stackdriver-auto"
+          },
+          "aliasBy": "{{resource.label.database_id}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "BigQuery — scanned bytes (billed)",
+      "description": "Cost driver. Sustained growth = expensive queries; cross-check the Deep Dive dashboard.",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 17 },
+      "id": 6,
+      "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "drawStyle": "bars", "fillOpacity": 50 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+          "queryType": "timeSeriesList",
+          "timeSeriesList": {
+            "projectName": "sctp-team2-project2-elt",
+            "filters": ["metric.type", "=", "bigquery.googleapis.com/query/scanned_bytes_billed"],
+            "perSeriesAligner": "ALIGN_SUM",
+            "crossSeriesReducer": "REDUCE_SUM",
+            "groupBys": [],
+            "alignmentPeriod": "stackdriver-auto"
+          },
+          "aliasBy": "scanned bytes billed"
+        }
+      ]
+    }
+  ]
+}

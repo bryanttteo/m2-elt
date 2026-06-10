@@ -1,0 +1,72 @@
+# Olist executive dashboard — local Superset stack.
+#   1. cp .env.superset.example .env.superset   (set SUPERSET_SECRET_KEY)
+#   2. docker compose up -d                      (starts db, redis, superset; runs init once)
+#   3. open http://localhost:8088                (login with SUPERSET_ADMIN_USER/PASSWORD)
+#
+# The service-account key is mounted read-only from the repo-root ./secrets dir.
+# Override which key file with SA_KEY_FILE in .env.superset if yours differs.
+
+x-superset-env: &superset-env
+  env_file: .env.superset
+
+x-superset-build: &superset-build
+  build:
+    context: .
+    dockerfile: Dockerfile
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-superset}
+      POSTGRES_PASSWORD: ${DB_PASS:-superset}
+      POSTGRES_DB: ${DB_NAME:-superset}
+    volumes:
+      - superset_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-superset}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - superset_redis:/data
+
+  # One-shot: migrate metadata DB, create admin, register BigQuery, import the bundle.
+  superset-init:
+    <<: [*superset-build, *superset-env]
+    command: ["/app/bootstrap/init.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./superset_config.py:/app/pythonpath/superset_config.py:ro
+      - ./bootstrap:/app/bootstrap:ro
+      - ./sql:/app/sql:ro
+      - ./dist:/app/dist
+      - ${SA_KEY_FILE:-../../secrets/sctp-team2-project2-elt-ROTATED-dbcb3cd092f4.json}:/app/secrets/sa.json:ro
+    restart: "no"
+
+  superset:
+    <<: [*superset-build, *superset-env]
+    command: ["gunicorn", "--bind", "0.0.0.0:8088", "--workers", "4",
+              "--timeout", "120", "--limit-request-line", "0", "--limit-request-field_size", "0",
+              "superset.app:create_app()"]
+    ports:
+      - "8088:8088"
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./superset_config.py:/app/pythonpath/superset_config.py:ro
+      - ./sql:/app/sql:ro
+      - ${SA_KEY_FILE:-../../secrets/sctp-team2-project2-elt-ROTATED-dbcb3cd092f4.json}:/app/secrets/sa.json:ro
+    restart: unless-stopped
+
+volumes:
+  superset_db:
+  superset_redis:

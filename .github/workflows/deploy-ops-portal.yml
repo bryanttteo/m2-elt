@@ -1,0 +1,39 @@
+name: Deploy Ops Portal (Cloud Run)
+
+# Serves the observability landing page + server-side /api/status health checks.
+# Fires when the observability folder (or this workflow) changes on main.
+# App URLs are injected from repo variables/secrets so health checks resolve.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'p6_orchestration/observability/**'
+      - '.github/workflows/deploy-ops-portal.yml'
+  workflow_dispatch: {}
+
+env:
+  PROJECT: sctp-team2-project2-elt
+  REGION: us-central1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build & deploy to Cloud Run
+        working-directory: p6_orchestration/observability
+        run: |
+          make deploy PROJECT="$PROJECT" REGION="$REGION" \
+            DASH_URL="${{ vars.DASH_URL }}" \
+            STREAMLIT_URL="${{ vars.STREAMLIT_URL }}" \
+            WORDCLOUD_URL="${{ vars.WORDCLOUD_URL }}" \
+            SUPERSET_URL="${{ vars.SUPERSET_URL }}" \
+            DAGSTER_URL="${{ vars.DAGSTER_URL }}"

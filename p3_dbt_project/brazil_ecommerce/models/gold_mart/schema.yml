@@ -38,22 +38,42 @@ models:
                 column_type: STRING
 
   - name: dim_reviews
-    description: "Review dimension, one row per order."
+    description: "Review dimension (Type-2 SCD from reviews_dbt_scd_snapshot), one row per review version."
     columns:
       - name: id
-        description: "Primary key (order_id)."
+        description: "Surrogate primary key (dbt_scd_id) — unique per review version."
         tests:
           - unique
           - not_null
           - dbt_expectations.expect_column_values_to_be_of_type:
               arguments:
                 column_type: STRING
+      - name: order_id
+        description: "Business key — NOT unique (history preserved). Joined from fact_orders.id."
+      - name: is_current
+        description: "TRUE for the live version of the review (dbt_valid_to IS NULL)."
       - name: review_score
         description: "1 (worst) to 5 (best)."
         tests:
           - dbt_expectations.expect_column_values_to_be_of_type:
               arguments:
                 column_type: INT64
+
+  - name: dim_geolocation
+    description: "Geolocation dimension (Type-2 SCD from geolocation_dbt_scd_snapshot), one row per zip-prefix version."
+    columns:
+      - name: id
+        description: "Surrogate primary key (dbt_scd_id) — unique per zip-prefix version."
+        tests:
+          - unique
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: STRING
+      - name: geolocation_zip_code_prefix
+        description: "Business key — NOT unique (history preserved)."
+      - name: is_current
+        description: "TRUE for the live version of the zip prefix (dbt_valid_to IS NULL)."
 
   - name: fact_orders
     description: "Order fact at order-item grain. Composite PK = (id, order_item_id)."
@@ -72,7 +92,7 @@ models:
           - relationships:
               arguments:
                 to: ref('dim_reviews')
-                field: id
+                field: order_id
               config:
                 # Not every order has a review, so a missing match is expected.
                 severity: warn

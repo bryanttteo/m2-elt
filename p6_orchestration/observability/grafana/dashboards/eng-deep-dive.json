@@ -1,0 +1,160 @@
+{
+  "uid": "olist-eng-deep-dive",
+  "title": "Engineering Deep Dive",
+  "tags": ["olist", "engineering"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": { "from": "now-12h", "to": "now" },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Cloud Run — CPU utilization",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+          "queryType": "timeSeriesList",
+          "timeSeriesList": {
+            "projectName": "sctp-team2-project2-elt",
+            "filters": ["metric.type", "=", "run.googleapis.com/container/cpu/utilizations"],
+            "perSeriesAligner": "ALIGN_PERCENTILE_95",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "groupBys": ["resource.label.service_name"],
+            "alignmentPeriod": "stackdriver-auto"
+          },
+          "aliasBy": "{{resource.label.service_name}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Cloud Run — memory utilization",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+          "queryType": "timeSeriesList",
+          "timeSeriesList": {
+            "projectName": "sctp-team2-project2-elt",
+            "filters": ["metric.type", "=", "run.googleapis.com/container/memory/utilizations"],
+            "perSeriesAligner": "ALIGN_PERCENTILE_95",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "groupBys": ["resource.label.service_name"],
+            "alignmentPeriod": "stackdriver-auto"
+          },
+          "aliasBy": "{{resource.label.service_name}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Cloud SQL — active connections",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+          "queryType": "timeSeriesList",
+          "timeSeriesList": {
+            "projectName": "sctp-team2-project2-elt",
+            "filters": ["metric.type", "=", "cloudsql.googleapis.com/database/postgresql/num_backends"],
+            "perSeriesAligner": "ALIGN_MEAN",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "groupBys": ["resource.label.database_id"],
+            "alignmentPeriod": "stackdriver-auto"
+          },
+          "aliasBy": "{{resource.label.database_id}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Cloud SQL — disk utilization",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "max": 1, "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+          "queryType": "timeSeriesList",
+          "timeSeriesList": {
+            "projectName": "sctp-team2-project2-elt",
+            "filters": ["metric.type", "=", "cloudsql.googleapis.com/database/disk/utilization"],
+            "perSeriesAligner": "ALIGN_MEAN",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "groupBys": ["resource.label.database_id"],
+            "alignmentPeriod": "stackdriver-auto"
+          },
+          "aliasBy": "{{resource.label.database_id}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "BigQuery — query count by project",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "id": 5,
+      "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "fillOpacity": 50 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "stackdriver", "uid": "cloud-monitoring" },
+          "queryType": "timeSeriesList",
+          "timeSeriesList": {
+            "projectName": "sctp-team2-project2-elt",
+            "filters": ["metric.type", "=", "bigquery.googleapis.com/query/count"],
+            "perSeriesAligner": "ALIGN_RATE",
+            "crossSeriesReducer": "REDUCE_SUM",
+            "groupBys": [],
+            "alignmentPeriod": "stackdriver-auto"
+          },
+          "aliasBy": "queries"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Top BigQuery jobs by bytes billed (last 24h)",
+      "description": "Requires the BigQuery datasource SA to have access to region-us.INFORMATION_SCHEMA.JOBS.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "id": 6,
+      "datasource": { "type": "grafana-bigquery-datasource", "uid": "bigquery" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-bigquery-datasource", "uid": "bigquery" },
+          "format": 1,
+          "location": "US",
+          "project": "sctp-team2-project2-elt",
+          "rawQuery": true,
+          "rawSql": "SELECT job_id, user_email, ROUND(total_bytes_billed/1e9, 2) AS gb_billed, TIMESTAMP_TRUNC(creation_time, MINUTE) AS started FROM `region-us`.INFORMATION_SCHEMA.JOBS WHERE creation_time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR) AND statement_type IS NOT NULL ORDER BY total_bytes_billed DESC LIMIT 20"
+        }
+      ]
+    }
+  ]
+}

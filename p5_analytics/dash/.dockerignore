@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.git/
+notes/
+README.md
+# Keep data/ when baking an offline snapshot image; comment the next line to exclude it.
+# data/

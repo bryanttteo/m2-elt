@@ -1,0 +1,22 @@
+apiVersion: 1
+
+# Both datasources authenticate via GCE/Cloud Run metadata — i.e. the service
+# account the Cloud Run service runs AS (the pipeline SA). No keys in the image.
+datasources:
+  - name: Cloud Monitoring
+    uid: cloud-monitoring
+    type: stackdriver
+    access: proxy
+    isDefault: true
+    jsonData:
+      authenticationType: gce
+      defaultProject: sctp-team2-project2-elt
+
+  - name: BigQuery
+    uid: bigquery
+    type: grafana-bigquery-datasource
+    access: proxy
+    jsonData:
+      authenticationType: gce
+      defaultProject: sctp-team2-project2-elt
+      processingLocation: US

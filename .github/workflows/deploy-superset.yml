@@ -1,0 +1,60 @@
+name: Deploy Superset (Cloud Run)
+
+# Dedicated trigger for p5_analytics/superset only — fires when that subfolder (or this
+# workflow) changes on main. Builds the Cloud Run image (deploy/Dockerfile.cloudrun) and
+# deploys to the olist-superset service. Independent of the other p5 apps.
+#
+# Superset has no `make deploy` target (its Makefile is local docker-compose only), so the
+# build/deploy is inline here. Admin creds + secret key come from GitHub secrets:
+#   SUPERSET_SECRET_KEY, SUPERSET_ADMIN_PASSWORD
+#
+# NOTE: this deploys with an EPHEMERAL metadata DB (per-instance) unless you wire Cloud SQL
+# into deploy/superset_config_cloudrun.py — fine for a demo, dashboards re-import on boot
+# from the baked-in bundle. See p5_analytics/superset/notes/setup.prod.md for the Cloud SQL
+# + Secret Manager + service-account upgrade.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'p5_analytics/superset/**'
+      - '.github/workflows/deploy-superset.yml'
+  workflow_dispatch: {}
+
+env:
+  PROJECT: sctp-team2-project2-elt
+  REGION: us-central1
+  REPO: olist-elt
+  SERVICE: olist-superset
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build & push image (Dockerfile.cloudrun)
+        working-directory: p5_analytics/superset
+        run: |
+          IMAGE=$REGION-docker.pkg.dev/$PROJECT/$REPO/$SERVICE:latest
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+          docker build -f deploy/Dockerfile.cloudrun -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Deploy to Cloud Run
+        env:
+          SUPERSET_SECRET_KEY: ${{ secrets.SUPERSET_SECRET_KEY }}
+          SUPERSET_ADMIN_PASSWORD: ${{ secrets.SUPERSET_ADMIN_PASSWORD }}
+        run: |
+          gcloud run deploy "$SERVICE" \
+            --image "$IMAGE" --project "$PROJECT" --region "$REGION" \
+            --platform managed --allow-unauthenticated \
+            --cpu 2 --memory 2Gi --concurrency 10 --min-instances 1 --port 8080 \
+            --set-env-vars "SUPERSET_ADMIN_USER=admin,SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY},SUPERSET_ADMIN_PASSWORD=${SUPERSET_ADMIN_PASSWORD},GCP_PROJECT=${PROJECT},BQ_GOLD_DATASET=olist_gold_mart_prod"

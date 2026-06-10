@@ -1,0 +1,7 @@
+# Secrets & local env — never commit
+.env.superset
+secrets/
+*.json
+
+# Generated bundle
+dist/*.zip

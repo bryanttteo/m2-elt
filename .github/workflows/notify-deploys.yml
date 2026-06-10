@@ -1,0 +1,58 @@
+name: Notify deploys (email)
+
+# Sends a team email whenever any deploy workflow finishes (success OR failure).
+# Uses the workflow_run trigger so we DON'T have to edit each deploy workflow — this one
+# file watches them all. Add/remove an app by editing the `workflows:` list below.
+#
+# Requires two repo secrets (Settings -> Secrets and variables -> Actions):
+#   MAIL_USERNAME  — the sending Gmail address (e.g. hoongjundsai@gmail.com)
+#   MAIL_PASSWORD  — a Gmail App Password for that account (NOT the normal password):
+#                    https://myaccount.google.com/apppasswords
+#
+# Note: workflow_run only fires for workflow definitions on the default branch (main).
+
+on:
+  workflow_run:
+    workflows:
+      - "Build & deploy Dagster to prod"
+      - "Deploy Streamlit (Cloud Run)"
+      - "Deploy Dash (Cloud Run)"
+      - "Deploy Superset (Cloud Run)"
+      - "Deploy Wordcloud (Cloud Run)"
+      - "Deploy Grafana (Cloud Run)"
+      - "Deploy Ops Portal (Cloud Run)"
+    types: [completed]
+
+jobs:
+  email:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send deploy notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          from: Olist CI <${{ secrets.MAIL_USERNAME }}>
+          to: >-
+            bryanteo1250@gmail.com,
+            hoongjun@gmail.com,
+            hoongjundsai@gmail.com,
+            johnphs@gmail.com,
+            limchunweilcw@gmail.com,
+            mainit.exp@gmail.com,
+            szemainwong@gmail.com,
+            tansm.sg@gmail.com,
+            zzwbryan@gmail.com
+          subject: "[olist deploy] ${{ github.event.workflow_run.name }} — ${{ github.event.workflow_run.conclusion }}"
+          body: |
+            Deploy workflow finished.
+
+            App / workflow : ${{ github.event.workflow_run.name }}
+            Result         : ${{ github.event.workflow_run.conclusion }}
+            Branch         : ${{ github.event.workflow_run.head_branch }}
+            Commit         : ${{ github.event.workflow_run.head_sha }}
+            Triggered by   : ${{ github.event.workflow_run.actor.login }}
+            Run logs       : ${{ github.event.workflow_run.html_url }}
